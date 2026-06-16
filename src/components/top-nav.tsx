@@ -66,7 +66,7 @@ export function TopNav() {
               onClick={() => setIsMenuOpen(false)}
               icon={<History className="h-4 w-4" strokeWidth={2.3} />}
             >
-              Historie
+              Vorgänge
             </NavLink>
 
             <button
@@ -95,7 +95,7 @@ export function TopNav() {
             to="/history"
             icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
-            Historie
+            Vorgänge
           </NavLink>
 
           <div className="ml-auto flex items-center">

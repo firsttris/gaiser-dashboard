@@ -97,7 +97,7 @@ function HistoryPage() {
         <TopNav />
         <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
           <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
-          <p className="mt-2 text-slate-600">Die Historie ist nur nach Firmen-PIN verfuegbar.</p>
+          <p className="mt-2 text-slate-600">Die Vorgänge sind nur nach Firmen-PIN verfuegbar.</p>
           <Link
             to="/"
             className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline"
@@ -153,7 +153,7 @@ function HistoryPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-title text-5xl text-slate-900">Historie</h1>
+            <h1 className="font-title text-5xl text-slate-900">Vorgänge</h1>
             <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgaenge fuer {selectedCompany?.name}.</p>
           </div>
           <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">

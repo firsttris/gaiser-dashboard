@@ -127,10 +127,10 @@ function AdminPage() {
                 onClick={() => setIsMenuOpen(false)}
                 icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
               >
-                Historie
+                Vorgänge
               </NavLink>
 
-              <NavLink 
+              <NavLink
                 to="/admin/products"
                 compact
                 onClick={() => setIsMenuOpen(false)}
@@ -180,7 +180,7 @@ function AdminPage() {
               activeOptions={{ exact: true }}
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
-              Historie
+              Vorgänge
             </NavLink>
             <NavLink
               to="/admin/products"
