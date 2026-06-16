@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WizardRouteImport } from './routes/wizard'
+import { Route as RechnungenRouteImport } from './routes/rechnungen'
+import { Route as LieferscheineRouteImport } from './routes/lieferscheine'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,12 +20,24 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WizardPickupRouteImport } from './routes/wizard.pickup'
 import { Route as WizardDropoffRouteImport } from './routes/wizard.dropoff'
 import { Route as AdminSitesRouteImport } from './routes/admin.sites'
+import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminCompaniesRouteImport } from './routes/admin.companies'
 
 const WizardRoute = WizardRouteImport.update({
   id: '/wizard',
   path: '/wizard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RechnungenRoute = RechnungenRouteImport.update({
+  id: '/rechnungen',
+  path: '/rechnungen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LieferscheineRoute = LieferscheineRouteImport.update({
+  id: '/lieferscheine',
+  path: '/lieferscheine',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -66,9 +80,19 @@ const AdminSitesRoute = AdminSitesRouteImport.update({
   path: '/sites',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRechnungenRoute = AdminRechnungenRouteImport.update({
+  id: '/rechnungen',
+  path: '/rechnungen',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
+  id: '/lieferscheine',
+  path: '/lieferscheine',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCompaniesRoute = AdminCompaniesRouteImport.update({
@@ -81,9 +105,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/history': typeof HistoryRoute
+  '/lieferscheine': typeof LieferscheineRoute
+  '/rechnungen': typeof RechnungenRoute
   '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
@@ -93,8 +121,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
+  '/lieferscheine': typeof LieferscheineRoute
+  '/rechnungen': typeof RechnungenRoute
   '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
@@ -106,9 +138,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/history': typeof HistoryRoute
+  '/lieferscheine': typeof LieferscheineRoute
+  '/rechnungen': typeof RechnungenRoute
   '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
@@ -121,9 +157,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/history'
+    | '/lieferscheine'
+    | '/rechnungen'
     | '/wizard'
     | '/admin/companies'
+    | '/admin/lieferscheine'
     | '/admin/products'
+    | '/admin/rechnungen'
     | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
@@ -133,8 +173,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/history'
+    | '/lieferscheine'
+    | '/rechnungen'
     | '/admin/companies'
+    | '/admin/lieferscheine'
     | '/admin/products'
+    | '/admin/rechnungen'
     | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
@@ -145,9 +189,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/history'
+    | '/lieferscheine'
+    | '/rechnungen'
     | '/wizard'
     | '/admin/companies'
+    | '/admin/lieferscheine'
     | '/admin/products'
+    | '/admin/rechnungen'
     | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
@@ -159,6 +207,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   HistoryRoute: typeof HistoryRoute
+  LieferscheineRoute: typeof LieferscheineRoute
+  RechnungenRoute: typeof RechnungenRoute
   WizardRoute: typeof WizardRouteWithChildren
 }
 
@@ -169,6 +219,20 @@ declare module '@tanstack/react-router' {
       path: '/wizard'
       fullPath: '/wizard'
       preLoaderRoute: typeof WizardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rechnungen': {
+      id: '/rechnungen'
+      path: '/rechnungen'
+      fullPath: '/rechnungen'
+      preLoaderRoute: typeof RechnungenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lieferscheine': {
+      id: '/lieferscheine'
+      path: '/lieferscheine'
+      fullPath: '/lieferscheine'
+      preLoaderRoute: typeof LieferscheineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -227,11 +291,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSitesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/rechnungen': {
+      id: '/admin/rechnungen'
+      path: '/rechnungen'
+      fullPath: '/admin/rechnungen'
+      preLoaderRoute: typeof AdminRechnungenRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/lieferscheine': {
+      id: '/admin/lieferscheine'
+      path: '/lieferscheine'
+      fullPath: '/admin/lieferscheine'
+      preLoaderRoute: typeof AdminLieferscheineRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/companies': {
@@ -246,14 +324,18 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminCompaniesRoute: typeof AdminCompaniesRoute
+  AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminRechnungenRoute: typeof AdminRechnungenRoute
   AdminSitesRoute: typeof AdminSitesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCompaniesRoute: AdminCompaniesRoute,
+  AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminRechnungenRoute: AdminRechnungenRoute,
   AdminSitesRoute: AdminSitesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -279,6 +361,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   HistoryRoute: HistoryRoute,
+  LieferscheineRoute: LieferscheineRoute,
+  RechnungenRoute: RechnungenRoute,
   WizardRoute: WizardRouteWithChildren,
 }
 export const routeTree = rootRouteImport

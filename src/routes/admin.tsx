@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, LogOut, MapPinned, Menu, ReceiptText, ShieldCheck, X } from 'lucide-react'
+import { Blocks, Building2, LogOut, MapPinned, Menu, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
@@ -120,7 +120,7 @@ function AdminPage() {
 
           {isMenuOpen && (
             <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
-              <NavLink 
+              <NavLink
                 to="/admin"
                 compact
                 activeOptions={{ exact: true }}
@@ -128,6 +128,24 @@ function AdminPage() {
                 icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
               >
                 Vorgänge
+              </NavLink>
+
+              <NavLink
+                to="/admin/lieferscheine"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<Truck className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Lieferscheine
+              </NavLink>
+
+              <NavLink
+                to="/admin/rechnungen"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<Receipt className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Rechnungen
               </NavLink>
 
               <NavLink
@@ -139,7 +157,7 @@ function AdminPage() {
                 Produkte
               </NavLink>
 
-              <NavLink 
+              <NavLink
                 to="/admin/companies"
                 compact
                 onClick={() => setIsMenuOpen(false)}
@@ -181,6 +199,18 @@ function AdminPage() {
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
               Vorgänge
+            </NavLink>
+            <NavLink
+              to="/admin/lieferscheine"
+              icon={<Truck className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Lieferscheine
+            </NavLink>
+            <NavLink
+              to="/admin/rechnungen"
+              icon={<Receipt className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Rechnungen
             </NavLink>
             <NavLink
               to="/admin/products"

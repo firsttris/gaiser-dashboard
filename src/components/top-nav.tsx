@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Building2, ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
+import { Building2, ClipboardPlus, History, LogOut, Menu, Receipt, Truck, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
@@ -69,6 +69,24 @@ export function TopNav() {
               Vorgänge
             </NavLink>
 
+            <NavLink
+              to="/lieferscheine"
+              compact
+              onClick={() => setIsMenuOpen(false)}
+              icon={<Truck className="h-4 w-4" strokeWidth={2.3} />}
+            >
+              Lieferscheine
+            </NavLink>
+
+            <NavLink
+              to="/rechnungen"
+              compact
+              onClick={() => setIsMenuOpen(false)}
+              icon={<Receipt className="h-4 w-4" strokeWidth={2.3} />}
+            >
+              Rechnungen
+            </NavLink>
+
             <button
               type="button"
               onClick={() => {
@@ -96,6 +114,18 @@ export function TopNav() {
             icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
             Vorgänge
+          </NavLink>
+          <NavLink
+            to="/lieferscheine"
+            icon={<Truck className="h-4 w-4" strokeWidth={2.3} />}
+          >
+            Lieferscheine
+          </NavLink>
+          <NavLink
+            to="/rechnungen"
+            icon={<Receipt className="h-4 w-4" strokeWidth={2.3} />}
+          >
+            Rechnungen
           </NavLink>
 
           <div className="ml-auto flex items-center">

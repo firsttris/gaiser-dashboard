@@ -19,6 +19,24 @@ export function groupByDocId(
     .sort((a, b) => b.id.localeCompare(a.id))
 }
 
+export function groupAllByDocId(
+  records: RecordItem[],
+  idField: 'deliveryNoteId' | 'invoiceId',
+): Array<{ id: string; items: RecordItem[] }> {
+  const byId = new Map<string, RecordItem[]>()
+  for (const record of records) {
+    const id = record[idField]
+    if (id) {
+      const group = byId.get(id) ?? []
+      group.push(record)
+      byId.set(id, group)
+    }
+  }
+  return Array.from(byId.entries())
+    .map(([id, items]) => ({ id, items }))
+    .sort((a, b) => b.id.localeCompare(a.id))
+}
+
 export function money(value: number) {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
