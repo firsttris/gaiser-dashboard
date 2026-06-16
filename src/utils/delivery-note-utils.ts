@@ -7,6 +7,7 @@ export function downloadInvoicePdf(
   companyShortCode: string | undefined,
   deliveryNoteId?: string,
   existingInvoiceNo?: string,
+  reverseCharge = false,
 ): string {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 12
@@ -117,35 +118,61 @@ export function downloadInvoicePdf(
     pdf.addPage()
   }
 
-  const vat = subtotal * 0.19
-  const gross = subtotal + vat
   const summaryBoxWidth = 72
   const summaryBoxX = 126
   const summaryTop = 236
 
   pdf.setDrawColor(220)
-  pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 24, 2, 2)
-  y = summaryTop + 7
 
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(10)
-  pdf.text('Zwischensumme (netto):', summaryBoxX + 3, y)
-  pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-  y += 5
-  pdf.text('zzgl. 19% USt.:', summaryBoxX + 3, y)
-  pdf.text(money(vat), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-  y += 6
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('Rechnungsbetrag:', summaryBoxX + 3, y)
-  pdf.text(money(gross), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+  if (reverseCharge) {
+    pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 14, 2, 2)
+    y = summaryTop + 8
 
-  y += 14
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
-  y += 5
-  pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.text('Rechnungsbetrag (netto):', summaryBoxX + 3, y)
+    pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+
+    y = summaryTop + 22
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
+    y += 5
+    pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
+    y += 8
+    pdf.setFontSize(8)
+    pdf.setTextColor(100)
+    pdf.text('Hinweis: Steuerschuldnerschaft des Leistungsempfaengers gemaess §13b UStG.', left, y)
+    y += 4
+    pdf.text('Die Umsatzsteuer ist vom Leistungsempfaenger zu entrichten.', left, y)
+    pdf.setTextColor(0)
+  } else {
+    const vat = subtotal * 0.19
+    const gross = subtotal + vat
+
+    pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 24, 2, 2)
+    y = summaryTop + 7
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(10)
+    pdf.text('Zwischensumme (netto):', summaryBoxX + 3, y)
+    pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+    y += 5
+    pdf.text('zzgl. 19% USt.:', summaryBoxX + 3, y)
+    pdf.text(money(vat), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+    y += 6
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.text('Rechnungsbetrag:', summaryBoxX + 3, y)
+    pdf.text(money(gross), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+
+    y += 14
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
+    y += 5
+    pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
+  }
 
   pdf.save(`rechnung-${toSafeFileDate(invoiceNo)}.pdf`)
 

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable, shortDocId } from '../components/history-table'
 import { useRecordSelection } from '../hooks/use-record-selection'
@@ -19,6 +20,8 @@ export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 function AdminIndexPage() {
   const { companies, records, updateRecordStatus, assignDeliveryNote, assignInvoice, assignCancel } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [invoiceDialog, setInvoiceDialog] = useState<{ deliveryNoteId: string; items: typeof records } | null>(null)
+  const [reverseCharge, setReverseCharge] = useState(false)
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -85,11 +88,11 @@ function AdminIndexPage() {
     downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
   }
 
-  function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records) {
+  function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records, isReverseCharge = false) {
     const shortCode = companies.find((c) => c.name === invoiceRecords[0].company)?.shortCode
-    const invoiceNo = downloadInvoicePdf(invoiceRecords, shortCode, deliveryNoteId)
+    const invoiceNo = downloadInvoicePdf(invoiceRecords, shortCode, deliveryNoteId, undefined, isReverseCharge)
     invoiceRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
-    assignInvoice(invoiceRecords.map((r) => r.id), invoiceNo)
+    assignInvoice(invoiceRecords.map((r) => r.id), invoiceNo, isReverseCharge)
   }
 
   function cancelDeliveryNoteGroup(items: typeof records) {
@@ -114,7 +117,7 @@ function AdminIndexPage() {
     const group = records.filter((r) => r.invoiceId === invoiceId)
     if (group.length === 0) return
     const shortCode = companies.find((c) => c.name === group[0].company)?.shortCode
-    downloadInvoicePdf(group, shortCode, group[0].deliveryNoteId, invoiceId)
+    downloadInvoicePdf(group, shortCode, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
   }
 
   function handleCancelClick(cancelId: string) {
@@ -149,7 +152,7 @@ function AdminIndexPage() {
                 type="button"
                 onClick={() => {
                   const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
-                  downloadInvoicePdf(items, shortCode, items[0].deliveryNoteId, id)
+                  downloadInvoicePdf(items, shortCode, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)
                 }}
                 className="rounded-xl bg-blue-500 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600"
               >
@@ -200,7 +203,7 @@ function AdminIndexPage() {
               </button>
               <button
                 type="button"
-                onClick={() => createInvoiceForDeliveryNote(id, items)}
+                onClick={() => { setReverseCharge(false); setInvoiceDialog({ deliveryNoteId: id, items }) }}
                 className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
               >
                 Rechnung erstellen
@@ -307,6 +310,56 @@ function AdminIndexPage() {
           />
         )}
       </article>
+      {invoiceDialog && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setInvoiceDialog(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {invoiceDialog.items.length} Position(en) für {invoiceDialog.items[0].company}
+            </p>
+            <label className="mt-4 flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={reverseCharge}
+                onChange={(e) => setReverseCharge(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
+            </label>
+            {reverseCharge && (
+              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setInvoiceDialog(null)}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  createInvoiceForDeliveryNote(invoiceDialog.deliveryNoteId, invoiceDialog.items, reverseCharge)
+                  setInvoiceDialog(null)
+                }}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Rechnung erstellen
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <ConfirmDialog
         open={pendingAction !== null}
         title={pendingAction?.title ?? ''}

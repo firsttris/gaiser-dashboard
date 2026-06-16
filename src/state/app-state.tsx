@@ -43,6 +43,7 @@ export type RecordItem = {
   createdAt: string
   deliveryNoteId?: string
   invoiceId?: string
+  invoiceReverseCharge?: boolean
   cancelId?: string
 }
 
@@ -135,7 +136,7 @@ type AppState = {
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => CreateCompanyResult
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
   assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
-  assignInvoice: (recordIds: number[], invoiceId: string) => void
+  assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
   assignCancel: (recordIds: number[], cancelId: string) => void
 }
 
@@ -822,11 +823,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           }),
         )
       },
-      assignInvoice: (recordIds: number[], invoiceId: string) => {
+      assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => {
         setRecords((prev) =>
           prev.map((record) => {
             if (!recordIds.includes(record.id)) return record
-            return { ...record, invoiceId }
+            return { ...record, invoiceId, invoiceReverseCharge: reverseCharge ?? false }
           }),
         )
       },
