@@ -329,7 +329,7 @@ function AdminProductsPage() {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-      <h2 className="font-title text-5xl text-slate-900">Material</h2>
+      <h2 className="font-title text-4xl text-slate-900">Material</h2>
       <p className="mt-2 text-sm text-slate-600">
         Material koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
       </p>

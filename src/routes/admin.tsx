@@ -1,13 +1,21 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
+import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, Truck, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
+import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
+
+const settingsNavItems = [
+  { to: '/admin/material', label: 'Material', icon: <Blocks className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/lkw', label: 'LKW', icon: <Clock className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/kunden', label: 'Kunden', icon: <Building2 className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/baustellen', label: 'Baustellen', icon: <MapPinned className="h-4 w-4" strokeWidth={2.25} /> },
+]
 
 function AdminPage() {
   const { isAdminLoggedIn, adminLogin, adminLogout } = useAppState()
@@ -156,41 +164,13 @@ function AdminPage() {
                 Rechnungen
               </NavLink>
 
-              <NavLink
-                to="/admin/material"
+              <NavDropdown
+                label="Einstellungen"
+                icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
+                items={settingsNavItems}
                 compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                Material
-              </NavLink>
-
-              <NavLink
-                to="/admin/lkw"
-                compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<Clock className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                LKW
-              </NavLink>
-
-              <NavLink
-                to="/admin/kunden"
-                compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                Kunden
-              </NavLink>
-
-              <NavLink
-                to="/admin/baustellen"
-                compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                Baustellen
-              </NavLink>
+                onNavigate={() => setIsMenuOpen(false)}
+              />
 
               <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
                 <ClearDbButton compact />
@@ -234,30 +214,11 @@ function AdminPage() {
             >
               Rechnungen
             </NavLink>
-            <NavLink
-              to="/admin/material"
-              icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              Material
-            </NavLink>
-            <NavLink
-              to="/admin/lkw"
-              icon={<Clock className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              LKW
-            </NavLink>
-            <NavLink
-              to="/admin/kunden"
-              icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              Kunden
-            </NavLink>
-            <NavLink
-              to="/admin/baustellen"
-              icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              Baustellen
-            </NavLink>
+            <NavDropdown
+              label="Einstellungen"
+              icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
+              items={settingsNavItems}
+            />
 
             <div className="ml-auto flex items-center gap-4">
               <ClearDbButton />
