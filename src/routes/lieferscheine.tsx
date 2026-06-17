@@ -4,16 +4,17 @@ import { DocumentListTable, type BadgeConfig } from '../components/document-list
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId } from '../utils/history-utils'
+import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/lieferscheine')({ component: LieferscheinePage })
 
 function getBadge(items: RecordItem[]): BadgeConfig {
   const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return { label: 'Storniert', className: 'bg-slate-100 text-slate-600' }
-  if (statuses.has('rechnung') || statuses.has('bezahlt')) return { label: 'In Rechnung gestellt', className: 'bg-blue-100 text-blue-800' }
-  return { label: 'Offen', className: 'bg-amber-100 text-amber-800' }
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  if (statuses.has('rechnung')) return statusBadge('rechnung')
+  return statusBadge('lieferschein')
 }
 
 function LieferscheinePage() {
@@ -29,7 +30,7 @@ function LieferscheinePage() {
     return allGroups.filter((g) => {
       if (statusFilter !== 'all') {
         const badge = getBadge(g.items)
-        const groupStatus = badge.label === 'Offen' ? 'offen' : badge.label === 'Storniert' ? 'storniert' : 'berechnet'
+        const groupStatus = badge.label === 'Storniert' ? 'storniert' : (badge.label === 'Rechnung' || badge.label === 'Bezahlt') ? 'berechnet' : 'offen'
         if (groupStatus !== statusFilter) return false
       }
       if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
@@ -44,9 +45,9 @@ function LieferscheinePage() {
         <button
           type="button"
           onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
-          className="rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+          className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
         >
-          Lieferschein PDF
+          LS-PDF
         </button>
         {items[0].invoiceId && (
           <button
@@ -55,18 +56,18 @@ function LieferscheinePage() {
               const group = companyRecords.filter((r) => r.invoiceId === items[0].invoiceId)
               downloadInvoicePdf(group, selectedCompany?.shortCode, id, items[0].invoiceId, items[0].invoiceReverseCharge)
             }}
-            className="rounded-xl bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600"
+            className="rounded bg-blue-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-blue-600"
           >
-            Rechnung PDF
+            RG-PDF
           </button>
         )}
         {cancelId && (
           <button
             type="button"
             onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)}
-            className="rounded-xl bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
-            Storno PDF
+            ST-PDF
           </button>
         )}
       </>

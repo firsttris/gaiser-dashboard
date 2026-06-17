@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { RecordItem, RecordStatus } from '../state/app-state'
-import { flowLabel, money, statusLabel, statusStages } from '../utils/history-utils'
+import { flowLabel, money, statusBadge, statusStages } from '../utils/history-utils'
 
 interface Props {
   records: RecordItem[]
@@ -141,7 +141,11 @@ export function HistoryTable({
                 </div>
                 <div>
                   <dt className="text-slate-500">Status</dt>
-                  <dd className="font-semibold text-slate-800">{statusLabel(record.status)}</dd>
+                  <dd className="mt-0.5">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
+                      {statusBadge(record.status).label}
+                    </span>
+                  </dd>
                 </div>
               </dl>
               {onStatusChange && (
@@ -249,13 +253,13 @@ export function HistoryTable({
                       )}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-xs">
+                  <td className="px-2 py-2">
                     {record.amount} {record.unit}
                   </td>
                   <td className={`hidden whitespace-nowrap px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
                     {money(record.unitPrice)}
                   </td>
-                  <td className="whitespace-nowrap px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
+                  <td className="whitespace-nowrap px-2 py-2">{money(record.total)}</td>
                   {onStatusChange ? (
                     <td className="px-2 py-2">
                       <select
@@ -271,7 +275,11 @@ export function HistoryTable({
                       </select>
                     </td>
                   ) : (
-                    <td className="px-2 py-2 text-xs">{statusLabel(record.status)}</td>
+                    <td className="px-2 py-2">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
+                        {statusBadge(record.status).label}
+                      </span>
+                    </td>
                   )}
                   <td className={`hidden px-2 py-2 text-slate-600 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
                     <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.constructionSiteName || '-'}</p>

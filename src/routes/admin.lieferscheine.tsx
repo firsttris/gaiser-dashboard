@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId } from '../utils/history-utils'
+import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/admin/lieferscheine')({ component: AdminLieferscheinePage })
@@ -13,9 +13,10 @@ type StatusFilter = 'all' | 'offen' | 'berechnet' | 'storniert'
 
 function getBadge(items: RecordItem[]): BadgeConfig {
   const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return { label: 'Storniert', className: 'bg-slate-100 text-slate-600' }
-  if (statuses.has('rechnung') || statuses.has('bezahlt')) return { label: 'In Rechnung gestellt', className: 'bg-blue-100 text-blue-800' }
-  return { label: 'Offen', className: 'bg-amber-100 text-amber-800' }
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  if (statuses.has('rechnung')) return statusBadge('rechnung')
+  return statusBadge('lieferschein')
 }
 
 function AdminLieferscheinePage() {
@@ -40,7 +41,7 @@ function AdminLieferscheinePage() {
       if (companyFilter !== 'all' && g.items[0].company !== companyFilter) return false
       if (statusFilter !== 'all') {
         const badge = getBadge(g.items)
-        const groupStatus: StatusFilter = badge.label === 'Offen' ? 'offen' : badge.label === 'Storniert' ? 'storniert' : 'berechnet'
+        const groupStatus: StatusFilter = badge.label === 'Storniert' ? 'storniert' : (badge.label === 'Rechnung' || badge.label === 'Bezahlt') ? 'berechnet' : 'offen'
         if (groupStatus !== statusFilter) return false
       }
       if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
@@ -65,7 +66,7 @@ function AdminLieferscheinePage() {
   function renderActions(id: string, items: RecordItem[]) {
     const badge = getBadge(items)
     const isStorniert = badge.label === 'Storniert'
-    const isOffen = badge.label === 'Offen'
+    const isOffen = badge.label === 'Lieferschein'
     return (
       <>
         {!isStorniert && (
@@ -76,7 +77,7 @@ function AdminLieferscheinePage() {
               title: 'Lieferschein stornieren',
               message: `Sind Sie sicher, dass Sie Lieferschein ${id} stornieren möchten?`,
             })}
-            className="rounded-xl bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
             Stornieren
           </button>
@@ -84,17 +85,17 @@ function AdminLieferscheinePage() {
         <button
           type="button"
           onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
-          className="rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+          className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
         >
-          Lieferschein PDF
+          LS-PDF
         </button>
         {isOffen && (
           <button
             type="button"
             onClick={() => { setReverseCharge(false); setInvoiceDialog({ deliveryNoteId: id, items }) }}
-            className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+            className="rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700"
           >
-            Rechnung erstellen
+            RG erstellen
           </button>
         )}
       </>

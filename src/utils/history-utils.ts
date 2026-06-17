@@ -61,6 +61,18 @@ export function statusLabel(status: RecordStatus | string) {
   return statusStages.find((stage) => stage.value === status)?.label ?? status
 }
 
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  offen:        { label: 'Offen',        className: 'bg-slate-100 text-slate-600' },
+  lieferschein: { label: 'Lieferschein', className: 'bg-amber-100 text-amber-800' },
+  rechnung:     { label: 'Rechnung',     className: 'bg-blue-100 text-blue-800' },
+  bezahlt:      { label: 'Bezahlt',      className: 'bg-emerald-100 text-emerald-800' },
+  storniert:    { label: 'Storniert',    className: 'bg-slate-100 text-slate-600' },
+}
+
+export function statusBadge(status: RecordStatus | string) {
+  return STATUS_BADGE[status] ?? { label: statusLabel(status), className: 'bg-slate-100 text-slate-600' }
+}
+
 export function csvCell(value: string | number) {
   const text = String(value).replace(/"/g, '""')
   return `"${text}"`

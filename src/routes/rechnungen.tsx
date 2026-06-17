@@ -4,16 +4,16 @@ import { DocumentListTable, type BadgeConfig } from '../components/document-list
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId } from '../utils/history-utils'
+import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/rechnungen')({ component: RechnungenPage })
 
 function getBadge(items: RecordItem[]): BadgeConfig {
   const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return { label: 'Storniert', className: 'bg-slate-100 text-slate-600' }
-  if (statuses.has('bezahlt')) return { label: 'Bezahlt', className: 'bg-emerald-100 text-emerald-800' }
-  return { label: 'Offen', className: 'bg-blue-100 text-blue-800' }
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  return statusBadge('rechnung')
 }
 
 type StatusFilter = 'all' | 'offen' | 'bezahlt' | 'storniert'
@@ -46,17 +46,17 @@ function RechnungenPage() {
         <button
           type="button"
           onClick={() => downloadInvoicePdf(items, selectedCompany?.shortCode, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)}
-          className="rounded-xl bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600"
+          className="rounded bg-blue-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-blue-600"
         >
-          Rechnung PDF
+          RG-PDF
         </button>
         {cancelId && (
           <button
             type="button"
             onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)}
-            className="rounded-xl bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
-            Storno PDF
+            ST-PDF
           </button>
         )}
       </>

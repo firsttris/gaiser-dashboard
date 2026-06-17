@@ -71,12 +71,12 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderA
               return (
                 <tr key={id} className="border-b border-slate-100 align-middle odd:bg-white even:bg-slate-50">
                   <td className="px-2 py-2.5 text-xs text-slate-600">{items[0].createdAt.split(',')[0]}</td>
-                  <td className="px-2 py-2.5 font-mono text-xs font-semibold text-slate-900">{id}</td>
+                  <td className="px-2 py-2.5 font-mono">{id}</td>
                   {showCompanyColumn && (
                     <td className="px-2 py-2.5 font-semibold text-slate-900">{items[0].company}</td>
                   )}
                   <td className="px-2 py-2.5 text-right text-slate-700">{items.length}</td>
-                  <td className="whitespace-nowrap px-2 py-2.5 text-right font-semibold text-slate-900">
+                  <td className="whitespace-nowrap px-2 py-2.5 text-right">
                     {money(total)}
                   </td>
                   <td className="px-2 py-2.5">

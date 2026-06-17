@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId } from '../utils/history-utils'
+import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/admin/rechnungen')({ component: AdminRechnungenPage })
@@ -12,9 +12,9 @@ type StatusFilter = 'all' | 'offen' | 'bezahlt' | 'storniert'
 
 function getBadge(items: RecordItem[]): BadgeConfig {
   const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return { label: 'Storniert', className: 'bg-slate-100 text-slate-600' }
-  if (statuses.has('bezahlt')) return { label: 'Bezahlt', className: 'bg-emerald-100 text-emerald-800' }
-  return { label: 'Offen', className: 'bg-blue-100 text-blue-800' }
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  return statusBadge('rechnung')
 }
 
 function AdminRechnungenPage() {
@@ -56,7 +56,7 @@ function AdminRechnungenPage() {
   function renderActions(id: string, items: RecordItem[]) {
     const badge = getBadge(items)
     const isStorniert = badge.label === 'Storniert'
-    const isOffen = badge.label === 'Offen'
+    const isOffen = badge.label === 'Rechnung'
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
     const deliveryNoteId = items[0].deliveryNoteId
@@ -70,7 +70,7 @@ function AdminRechnungenPage() {
               title: 'Rechnung stornieren',
               message: `Sind Sie sicher, dass Sie Rechnung ${id} stornieren möchten?`,
             })}
-            className="rounded-xl bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
             Stornieren
           </button>
@@ -78,9 +78,9 @@ function AdminRechnungenPage() {
         <button
           type="button"
           onClick={() => downloadInvoicePdf(items, shortCode, deliveryNoteId, id, items[0].invoiceReverseCharge)}
-          className="rounded-xl bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600"
+          className="rounded bg-blue-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-blue-600"
         >
-          Rechnung PDF
+          RG-PDF
         </button>
         {deliveryNoteId && (
           <button
@@ -89,18 +89,18 @@ function AdminRechnungenPage() {
               const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
               downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId)
             }}
-            className="rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+            className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
           >
-            Lieferschein PDF
+            LS-PDF
           </button>
         )}
         {cancelId && (
           <button
             type="button"
             onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
-            className="rounded-xl bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
-            Storno PDF
+            ST-PDF
           </button>
         )}
         {isOffen && (
@@ -111,9 +111,9 @@ function AdminRechnungenPage() {
               title: 'Als bezahlt markieren',
               message: `Sind Sie sicher, dass Sie Rechnung ${id} als bezahlt markieren möchten?`,
             })}
-            className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+            className="rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700"
           >
-            Als bezahlt markieren
+            Bezahlt
           </button>
         )}
       </>
