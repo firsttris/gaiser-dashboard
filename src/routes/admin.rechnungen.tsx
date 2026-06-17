@@ -5,6 +5,7 @@ import { DocumentListTable, type BadgeConfig } from '../components/document-list
 import { type RecordItem, useAppState } from '../state/app-state'
 import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { shortDocId } from '../components/history-table'
 
 export const Route = createFileRoute('/admin/rechnungen')({ component: AdminRechnungenPage })
 
@@ -53,13 +54,48 @@ function AdminRechnungenPage() {
     items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
   }
 
+  function renderDateien(id: string, items: RecordItem[]) {
+    const cancelId = items.find((r) => r.cancelId)?.cancelId
+    const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
+    const deliveryNoteId = items[0].deliveryNoteId
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => downloadInvoicePdf(items, shortCode, deliveryNoteId, id, items[0].invoiceReverseCharge)}
+          className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
+        >
+          {shortDocId(id)}
+        </button>
+        {deliveryNoteId && (
+          <button
+            type="button"
+            onClick={() => {
+              const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
+              downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId)
+            }}
+            className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
+          >
+            {shortDocId(deliveryNoteId)}
+          </button>
+        )}
+        {cancelId && (
+          <button
+            type="button"
+            onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
+            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
+          >
+            {shortDocId(cancelId)}
+          </button>
+        )}
+      </>
+    )
+  }
+
   function renderActions(id: string, items: RecordItem[]) {
     const badge = getBadge(items)
     const isStorniert = badge.label === 'Storniert'
     const isOffen = badge.label === 'Rechnung'
-    const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
-    const deliveryNoteId = items[0].deliveryNoteId
     return (
       <>
         {!isStorniert && (
@@ -73,34 +109,6 @@ function AdminRechnungenPage() {
             className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
           >
             Stornieren
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => downloadInvoicePdf(items, shortCode, deliveryNoteId, id, items[0].invoiceReverseCharge)}
-          className="rounded bg-blue-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-blue-600"
-        >
-          RG-PDF
-        </button>
-        {deliveryNoteId && (
-          <button
-            type="button"
-            onClick={() => {
-              const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
-              downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId)
-            }}
-            className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
-          >
-            LS-PDF
-          </button>
-        )}
-        {cancelId && (
-          <button
-            type="button"
-            onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
-            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
-          >
-            ST-PDF
           </button>
         )}
         {isOffen && (
@@ -182,6 +190,7 @@ function AdminRechnungenPage() {
             groups={filteredGroups}
             showCompanyColumn
             getBadge={getBadge}
+            renderDateien={renderDateien}
             renderActions={renderActions}
           />
         )}

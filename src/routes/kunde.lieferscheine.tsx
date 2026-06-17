@@ -6,6 +6,7 @@ import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { shortDocId } from '../components/history-table'
 
 export const Route = createFileRoute('/kunde/lieferscheine')({ component: LieferscheinePage })
 
@@ -38,16 +39,16 @@ function LieferscheinePage() {
     })
   }, [allGroups, statusFilter, searchText])
 
-  function renderActions(id: string, items: RecordItem[]) {
+  function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     return (
       <>
         <button
           type="button"
           onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
-          className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
+          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
         >
-          LS-PDF
+          {shortDocId(id)}
         </button>
         {items[0].invoiceId && (
           <button
@@ -56,18 +57,18 @@ function LieferscheinePage() {
               const group = companyRecords.filter((r) => r.invoiceId === items[0].invoiceId)
               downloadInvoicePdf(group, selectedCompany?.shortCode, id, items[0].invoiceId, items[0].invoiceReverseCharge)
             }}
-            className="rounded bg-blue-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-blue-600"
+            className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
           >
-            RG-PDF
+            {shortDocId(items[0].invoiceId)}
           </button>
         )}
         {cancelId && (
           <button
             type="button"
             onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)}
-            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
           >
-            ST-PDF
+            {shortDocId(cancelId)}
           </button>
         )}
       </>
@@ -137,7 +138,7 @@ function LieferscheinePage() {
           <DocumentListTable
             groups={filteredGroups}
             getBadge={getBadge}
-            renderActions={renderActions}
+            renderDateien={renderDateien}
           />
         )}
       </section>

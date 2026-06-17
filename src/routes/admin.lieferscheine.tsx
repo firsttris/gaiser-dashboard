@@ -6,6 +6,7 @@ import { DocumentListTable, type BadgeConfig } from '../components/document-list
 import { type RecordItem, useAppState } from '../state/app-state'
 import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { shortDocId } from '../components/history-table'
 
 export const Route = createFileRoute('/admin/lieferscheine')({ component: AdminLieferscheinePage })
 
@@ -63,6 +64,43 @@ function AdminLieferscheinePage() {
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
   }
 
+  function renderDateien(id: string, items: RecordItem[]) {
+    const invoiceId = items.find((r) => r.invoiceId)?.invoiceId
+    const cancelId = items.find((r) => r.cancelId)?.cancelId
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
+          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
+        >
+          {shortDocId(id)}
+        </button>
+        {invoiceId && (
+          <button
+            type="button"
+            onClick={() => {
+              const group = items.filter((r) => r.invoiceId === invoiceId)
+              downloadInvoicePdf(group, items[0].company, id, invoiceId, items[0].invoiceReverseCharge)
+            }}
+            className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
+          >
+            {shortDocId(invoiceId)}
+          </button>
+        )}
+        {cancelId && (
+          <button
+            type="button"
+            onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
+            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
+          >
+            {shortDocId(cancelId)}
+          </button>
+        )}
+      </>
+    )
+  }
+
   function renderActions(id: string, items: RecordItem[]) {
     const badge = getBadge(items)
     const isStorniert = badge.label === 'Storniert'
@@ -82,13 +120,6 @@ function AdminLieferscheinePage() {
             Stornieren
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
-          className="rounded bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-amber-600"
-        >
-          LS-PDF
-        </button>
         {isOffen && (
           <button
             type="button"
@@ -164,6 +195,7 @@ function AdminLieferscheinePage() {
             groups={filteredGroups}
             showCompanyColumn
             getBadge={getBadge}
+            renderDateien={renderDateien}
             renderActions={renderActions}
           />
         )}

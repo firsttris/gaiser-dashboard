@@ -9,10 +9,11 @@ interface Props {
   groups: DocumentGroup[]
   showCompanyColumn?: boolean
   getBadge: (items: RecordItem[]) => BadgeConfig
-  renderActions: (id: string, items: RecordItem[]) => ReactNode
+  renderDateien: (id: string, items: RecordItem[]) => ReactNode
+  renderActions?: (id: string, items: RecordItem[]) => ReactNode
 }
 
-export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderActions }: Props) {
+export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderDateien, renderActions }: Props) {
   return (
     <>
       <div className="mt-4 space-y-3 md:hidden">
@@ -44,8 +45,13 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderA
                 </div>
               </dl>
               <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                {renderActions(id, items)}
+                {renderDateien(id, items)}
               </div>
+              {renderActions && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {renderActions(id, items)}
+                </div>
+              )}
             </article>
           )
         })}
@@ -61,7 +67,8 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderA
               <th className="w-24 px-2 py-2 text-right font-semibold">Positionen</th>
               <th className="w-28 px-2 py-2 text-right font-semibold">Gesamt</th>
               <th className="w-40 px-2 py-2 font-semibold">Status</th>
-              <th className="px-2 py-2 font-semibold">Aktionen</th>
+              <th className="px-2 py-2 font-semibold">Dateien</th>
+              {renderActions && <th className="w-40 px-2 py-2 font-semibold">Aktionen</th>}
             </tr>
           </thead>
           <tbody>
@@ -86,9 +93,16 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderA
                   </td>
                   <td className="px-2 py-2.5">
                     <div className="flex flex-wrap gap-1.5">
-                      {renderActions(id, items)}
+                      {renderDateien(id, items)}
                     </div>
                   </td>
+                  {renderActions && (
+                    <td className="px-2 py-2.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {renderActions(id, items)}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               )
             })}
