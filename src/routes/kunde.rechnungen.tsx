@@ -7,7 +7,7 @@ import { type RecordItem, useAppState } from '../state/app-state'
 import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
-export const Route = createFileRoute('/rechnungen')({ component: RechnungenPage })
+export const Route = createFileRoute('/kunde/rechnungen')({ component: RechnungenPage })
 
 function getBadge(items: RecordItem[]): BadgeConfig {
   const statuses = new Set(items.map((r) => r.status))

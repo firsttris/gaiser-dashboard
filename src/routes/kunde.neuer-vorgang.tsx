@@ -3,7 +3,7 @@ import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 
-export const Route = createFileRoute('/wizard')({ component: WizardLayout })
+export const Route = createFileRoute('/kunde/neuer-vorgang')({ component: WizardLayout })
 
 function WizardLayout() {
   const { isLoggedIn } = useAppState()

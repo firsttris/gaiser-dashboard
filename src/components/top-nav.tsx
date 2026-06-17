@@ -52,7 +52,7 @@ export function TopNav() {
         {isMenuOpen && (
           <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
             <NavLink
-              to="/wizard"
+              to="/kunde/neuer-vorgang"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
@@ -61,7 +61,7 @@ export function TopNav() {
             </NavLink>
 
             <NavLink
-              to="/history"
+              to="/kunde/history"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<History className="h-4 w-4" strokeWidth={2.3} />}
@@ -70,7 +70,7 @@ export function TopNav() {
             </NavLink>
 
             <NavLink
-              to="/lieferscheine"
+              to="/kunde/lieferscheine"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<Truck className="h-4 w-4" strokeWidth={2.3} />}
@@ -79,7 +79,7 @@ export function TopNav() {
             </NavLink>
 
             <NavLink
-              to="/rechnungen"
+              to="/kunde/rechnungen"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<Receipt className="h-4 w-4" strokeWidth={2.3} />}
@@ -104,25 +104,25 @@ export function TopNav() {
 
         <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
           <NavLink
-            to="/wizard"
+            to="/kunde/neuer-vorgang"
             icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
           >
             Neuer Vorgang
           </NavLink>
           <NavLink
-            to="/history"
+            to="/kunde/history"
             icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
             Vorgänge
           </NavLink>
           <NavLink
-            to="/lieferscheine"
+            to="/kunde/lieferscheine"
             icon={<Truck className="h-4 w-4" strokeWidth={2.3} />}
           >
             Lieferscheine
           </NavLink>
           <NavLink
-            to="/rechnungen"
+            to="/kunde/rechnungen"
             icon={<Receipt className="h-4 w-4" strokeWidth={2.3} />}
           >
             Rechnungen

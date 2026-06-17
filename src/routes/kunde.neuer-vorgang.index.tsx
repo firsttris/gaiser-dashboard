@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowDownToLine, ArrowUpFromLine, Truck } from 'lucide-react'
 import type { FlowType } from '../state/app-state'
 
-export const Route = createFileRoute('/wizard/')({ component: WizardIndexPage })
+export const Route = createFileRoute('/kunde/neuer-vorgang/')({ component: WizardIndexPage })
 
 function FlowChoiceCard({
   type,
@@ -13,7 +13,7 @@ function FlowChoiceCard({
   type: FlowType
   title: string
   subtitle: string
-  to: '/wizard/pickup' | '/wizard/dropoff'
+  to: '/kunde/neuer-vorgang/pickup' | '/kunde/neuer-vorgang/dropoff'
 }) {
   const isPickup = type === 'pickup'
 
@@ -68,13 +68,13 @@ function WizardIndexPage() {
         type="pickup"
         title="Material holen"
         subtitle="z.B. Betonrecycling abholen."
-        to="/wizard/pickup"
+        to="/kunde/neuer-vorgang/pickup"
       />
       <FlowChoiceCard
         type="dropoff"
         title="Material bringen"
         subtitle="z.B. Aushub oder Bauschutt anliefern."
-        to="/wizard/dropoff"
+        to="/kunde/neuer-vorgang/dropoff"
       />
     </div>
   )

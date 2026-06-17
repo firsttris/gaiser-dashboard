@@ -9,40 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WizardRouteImport } from './routes/wizard'
-import { Route as RechnungenRouteImport } from './routes/rechnungen'
-import { Route as LieferscheineRouteImport } from './routes/lieferscheine'
-import { Route as HistoryRouteImport } from './routes/history'
+import { Route as KundeRouteImport } from './routes/kunde'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WizardIndexRouteImport } from './routes/wizard.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as WizardPickupRouteImport } from './routes/wizard.pickup'
-import { Route as WizardDropoffRouteImport } from './routes/wizard.dropoff'
+import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
+import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
+import { Route as KundeLieferscheineRouteImport } from './routes/kunde.lieferscheine'
+import { Route as KundeHistoryRouteImport } from './routes/kunde.history'
 import { Route as AdminSitesRouteImport } from './routes/admin.sites'
 import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminCompaniesRouteImport } from './routes/admin.companies'
+import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
+import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
+import { Route as KundeNeuerVorgangDropoffRouteImport } from './routes/kunde.neuer-vorgang.dropoff'
 
-const WizardRoute = WizardRouteImport.update({
-  id: '/wizard',
-  path: '/wizard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RechnungenRoute = RechnungenRouteImport.update({
-  id: '/rechnungen',
-  path: '/rechnungen',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LieferscheineRoute = LieferscheineRouteImport.update({
-  id: '/lieferscheine',
-  path: '/lieferscheine',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
+const KundeRoute = KundeRouteImport.update({
+  id: '/kunde',
+  path: '/kunde',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -55,25 +41,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WizardIndexRoute = WizardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WizardRoute,
-} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const WizardPickupRoute = WizardPickupRouteImport.update({
-  id: '/pickup',
-  path: '/pickup',
-  getParentRoute: () => WizardRoute,
+const KundeRechnungenRoute = KundeRechnungenRouteImport.update({
+  id: '/rechnungen',
+  path: '/rechnungen',
+  getParentRoute: () => KundeRoute,
 } as any)
-const WizardDropoffRoute = WizardDropoffRouteImport.update({
-  id: '/dropoff',
-  path: '/dropoff',
-  getParentRoute: () => WizardRoute,
+const KundeNeuerVorgangRoute = KundeNeuerVorgangRouteImport.update({
+  id: '/neuer-vorgang',
+  path: '/neuer-vorgang',
+  getParentRoute: () => KundeRoute,
+} as any)
+const KundeLieferscheineRoute = KundeLieferscheineRouteImport.update({
+  id: '/lieferscheine',
+  path: '/lieferscheine',
+  getParentRoute: () => KundeRoute,
+} as any)
+const KundeHistoryRoute = KundeHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => KundeRoute,
 } as any)
 const AdminSitesRoute = AdminSitesRouteImport.update({
   id: '/sites',
@@ -100,146 +91,144 @@ const AdminCompaniesRoute = AdminCompaniesRouteImport.update({
   path: '/companies',
   getParentRoute: () => AdminRoute,
 } as any)
+const KundeNeuerVorgangIndexRoute = KundeNeuerVorgangIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => KundeNeuerVorgangRoute,
+} as any)
+const KundeNeuerVorgangPickupRoute = KundeNeuerVorgangPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
+  getParentRoute: () => KundeNeuerVorgangRoute,
+} as any)
+const KundeNeuerVorgangDropoffRoute =
+  KundeNeuerVorgangDropoffRouteImport.update({
+    id: '/dropoff',
+    path: '/dropoff',
+    getParentRoute: () => KundeNeuerVorgangRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/history': typeof HistoryRoute
-  '/lieferscheine': typeof LieferscheineRoute
-  '/rechnungen': typeof RechnungenRoute
-  '/wizard': typeof WizardRouteWithChildren
+  '/kunde': typeof KundeRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
-  '/wizard/dropoff': typeof WizardDropoffRoute
-  '/wizard/pickup': typeof WizardPickupRoute
+  '/kunde/history': typeof KundeHistoryRoute
+  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
+  '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
+  '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/admin/': typeof AdminIndexRoute
-  '/wizard/': typeof WizardIndexRoute
+  '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
+  '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
+  '/kunde/neuer-vorgang/': typeof KundeNeuerVorgangIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/history': typeof HistoryRoute
-  '/lieferscheine': typeof LieferscheineRoute
-  '/rechnungen': typeof RechnungenRoute
+  '/kunde': typeof KundeRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
-  '/wizard/dropoff': typeof WizardDropoffRoute
-  '/wizard/pickup': typeof WizardPickupRoute
+  '/kunde/history': typeof KundeHistoryRoute
+  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
+  '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/admin': typeof AdminIndexRoute
-  '/wizard': typeof WizardIndexRoute
+  '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
+  '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
+  '/kunde/neuer-vorgang': typeof KundeNeuerVorgangIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/history': typeof HistoryRoute
-  '/lieferscheine': typeof LieferscheineRoute
-  '/rechnungen': typeof RechnungenRoute
-  '/wizard': typeof WizardRouteWithChildren
+  '/kunde': typeof KundeRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/sites': typeof AdminSitesRoute
-  '/wizard/dropoff': typeof WizardDropoffRoute
-  '/wizard/pickup': typeof WizardPickupRoute
+  '/kunde/history': typeof KundeHistoryRoute
+  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
+  '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
+  '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/admin/': typeof AdminIndexRoute
-  '/wizard/': typeof WizardIndexRoute
+  '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
+  '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
+  '/kunde/neuer-vorgang/': typeof KundeNeuerVorgangIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
-    | '/history'
-    | '/lieferscheine'
-    | '/rechnungen'
-    | '/wizard'
+    | '/kunde'
     | '/admin/companies'
     | '/admin/lieferscheine'
     | '/admin/products'
     | '/admin/rechnungen'
     | '/admin/sites'
-    | '/wizard/dropoff'
-    | '/wizard/pickup'
+    | '/kunde/history'
+    | '/kunde/lieferscheine'
+    | '/kunde/neuer-vorgang'
+    | '/kunde/rechnungen'
     | '/admin/'
-    | '/wizard/'
+    | '/kunde/neuer-vorgang/dropoff'
+    | '/kunde/neuer-vorgang/pickup'
+    | '/kunde/neuer-vorgang/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/history'
-    | '/lieferscheine'
-    | '/rechnungen'
+    | '/kunde'
     | '/admin/companies'
     | '/admin/lieferscheine'
     | '/admin/products'
     | '/admin/rechnungen'
     | '/admin/sites'
-    | '/wizard/dropoff'
-    | '/wizard/pickup'
+    | '/kunde/history'
+    | '/kunde/lieferscheine'
+    | '/kunde/rechnungen'
     | '/admin'
-    | '/wizard'
+    | '/kunde/neuer-vorgang/dropoff'
+    | '/kunde/neuer-vorgang/pickup'
+    | '/kunde/neuer-vorgang'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/history'
-    | '/lieferscheine'
-    | '/rechnungen'
-    | '/wizard'
+    | '/kunde'
     | '/admin/companies'
     | '/admin/lieferscheine'
     | '/admin/products'
     | '/admin/rechnungen'
     | '/admin/sites'
-    | '/wizard/dropoff'
-    | '/wizard/pickup'
+    | '/kunde/history'
+    | '/kunde/lieferscheine'
+    | '/kunde/neuer-vorgang'
+    | '/kunde/rechnungen'
     | '/admin/'
-    | '/wizard/'
+    | '/kunde/neuer-vorgang/dropoff'
+    | '/kunde/neuer-vorgang/pickup'
+    | '/kunde/neuer-vorgang/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  HistoryRoute: typeof HistoryRoute
-  LieferscheineRoute: typeof LieferscheineRoute
-  RechnungenRoute: typeof RechnungenRoute
-  WizardRoute: typeof WizardRouteWithChildren
+  KundeRoute: typeof KundeRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/wizard': {
-      id: '/wizard'
-      path: '/wizard'
-      fullPath: '/wizard'
-      preLoaderRoute: typeof WizardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rechnungen': {
-      id: '/rechnungen'
-      path: '/rechnungen'
-      fullPath: '/rechnungen'
-      preLoaderRoute: typeof RechnungenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lieferscheine': {
-      id: '/lieferscheine'
-      path: '/lieferscheine'
-      fullPath: '/lieferscheine'
-      preLoaderRoute: typeof LieferscheineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
+    '/kunde': {
+      id: '/kunde'
+      path: '/kunde'
+      fullPath: '/kunde'
+      preLoaderRoute: typeof KundeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -256,13 +245,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wizard/': {
-      id: '/wizard/'
-      path: '/'
-      fullPath: '/wizard/'
-      preLoaderRoute: typeof WizardIndexRouteImport
-      parentRoute: typeof WizardRoute
-    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -270,19 +252,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/wizard/pickup': {
-      id: '/wizard/pickup'
-      path: '/pickup'
-      fullPath: '/wizard/pickup'
-      preLoaderRoute: typeof WizardPickupRouteImport
-      parentRoute: typeof WizardRoute
+    '/kunde/rechnungen': {
+      id: '/kunde/rechnungen'
+      path: '/rechnungen'
+      fullPath: '/kunde/rechnungen'
+      preLoaderRoute: typeof KundeRechnungenRouteImport
+      parentRoute: typeof KundeRoute
     }
-    '/wizard/dropoff': {
-      id: '/wizard/dropoff'
-      path: '/dropoff'
-      fullPath: '/wizard/dropoff'
-      preLoaderRoute: typeof WizardDropoffRouteImport
-      parentRoute: typeof WizardRoute
+    '/kunde/neuer-vorgang': {
+      id: '/kunde/neuer-vorgang'
+      path: '/neuer-vorgang'
+      fullPath: '/kunde/neuer-vorgang'
+      preLoaderRoute: typeof KundeNeuerVorgangRouteImport
+      parentRoute: typeof KundeRoute
+    }
+    '/kunde/lieferscheine': {
+      id: '/kunde/lieferscheine'
+      path: '/lieferscheine'
+      fullPath: '/kunde/lieferscheine'
+      preLoaderRoute: typeof KundeLieferscheineRouteImport
+      parentRoute: typeof KundeRoute
+    }
+    '/kunde/history': {
+      id: '/kunde/history'
+      path: '/history'
+      fullPath: '/kunde/history'
+      preLoaderRoute: typeof KundeHistoryRouteImport
+      parentRoute: typeof KundeRoute
     }
     '/admin/sites': {
       id: '/admin/sites'
@@ -319,6 +315,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCompaniesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/kunde/neuer-vorgang/': {
+      id: '/kunde/neuer-vorgang/'
+      path: '/'
+      fullPath: '/kunde/neuer-vorgang/'
+      preLoaderRoute: typeof KundeNeuerVorgangIndexRouteImport
+      parentRoute: typeof KundeNeuerVorgangRoute
+    }
+    '/kunde/neuer-vorgang/pickup': {
+      id: '/kunde/neuer-vorgang/pickup'
+      path: '/pickup'
+      fullPath: '/kunde/neuer-vorgang/pickup'
+      preLoaderRoute: typeof KundeNeuerVorgangPickupRouteImport
+      parentRoute: typeof KundeNeuerVorgangRoute
+    }
+    '/kunde/neuer-vorgang/dropoff': {
+      id: '/kunde/neuer-vorgang/dropoff'
+      path: '/dropoff'
+      fullPath: '/kunde/neuer-vorgang/dropoff'
+      preLoaderRoute: typeof KundeNeuerVorgangDropoffRouteImport
+      parentRoute: typeof KundeNeuerVorgangRoute
+    }
   }
 }
 
@@ -342,28 +359,41 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface WizardRouteChildren {
-  WizardDropoffRoute: typeof WizardDropoffRoute
-  WizardPickupRoute: typeof WizardPickupRoute
-  WizardIndexRoute: typeof WizardIndexRoute
+interface KundeNeuerVorgangRouteChildren {
+  KundeNeuerVorgangDropoffRoute: typeof KundeNeuerVorgangDropoffRoute
+  KundeNeuerVorgangPickupRoute: typeof KundeNeuerVorgangPickupRoute
+  KundeNeuerVorgangIndexRoute: typeof KundeNeuerVorgangIndexRoute
 }
 
-const WizardRouteChildren: WizardRouteChildren = {
-  WizardDropoffRoute: WizardDropoffRoute,
-  WizardPickupRoute: WizardPickupRoute,
-  WizardIndexRoute: WizardIndexRoute,
+const KundeNeuerVorgangRouteChildren: KundeNeuerVorgangRouteChildren = {
+  KundeNeuerVorgangDropoffRoute: KundeNeuerVorgangDropoffRoute,
+  KundeNeuerVorgangPickupRoute: KundeNeuerVorgangPickupRoute,
+  KundeNeuerVorgangIndexRoute: KundeNeuerVorgangIndexRoute,
 }
 
-const WizardRouteWithChildren =
-  WizardRoute._addFileChildren(WizardRouteChildren)
+const KundeNeuerVorgangRouteWithChildren =
+  KundeNeuerVorgangRoute._addFileChildren(KundeNeuerVorgangRouteChildren)
+
+interface KundeRouteChildren {
+  KundeHistoryRoute: typeof KundeHistoryRoute
+  KundeLieferscheineRoute: typeof KundeLieferscheineRoute
+  KundeNeuerVorgangRoute: typeof KundeNeuerVorgangRouteWithChildren
+  KundeRechnungenRoute: typeof KundeRechnungenRoute
+}
+
+const KundeRouteChildren: KundeRouteChildren = {
+  KundeHistoryRoute: KundeHistoryRoute,
+  KundeLieferscheineRoute: KundeLieferscheineRoute,
+  KundeNeuerVorgangRoute: KundeNeuerVorgangRouteWithChildren,
+  KundeRechnungenRoute: KundeRechnungenRoute,
+}
+
+const KundeRouteWithChildren = KundeRoute._addFileChildren(KundeRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  HistoryRoute: HistoryRoute,
-  LieferscheineRoute: LieferscheineRoute,
-  RechnungenRoute: RechnungenRoute,
-  WizardRoute: WizardRouteWithChildren,
+  KundeRoute: KundeRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

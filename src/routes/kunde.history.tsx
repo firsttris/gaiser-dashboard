@@ -9,7 +9,7 @@ import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { RecordActionsBar } from '../components/record-actions-bar'
 
-export const Route = createFileRoute('/history')({ component: HistoryPage })
+export const Route = createFileRoute('/kunde/history')({ component: HistoryPage })
 
 function HistoryPage() {
   const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote } = useAppState()

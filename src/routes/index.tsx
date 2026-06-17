@@ -17,7 +17,7 @@ function App() {
   const navigate = Route.useNavigate()
 
   useEffect(() => {
-    if (isLoggedIn) void navigate({ to: '/wizard' })
+    if (isLoggedIn) void navigate({ to: '/kunde/neuer-vorgang' })
   }, [isLoggedIn, navigate])
 
   
@@ -43,7 +43,7 @@ function App() {
     }
 
     setError('')
-    void navigate({ to: '/wizard' })
+    void navigate({ to: '/kunde/neuer-vorgang' })
   }
 
   if (isLoggedIn) return null

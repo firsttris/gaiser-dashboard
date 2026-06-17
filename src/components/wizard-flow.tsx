@@ -195,7 +195,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => void navigate({ to: '/wizard' })}
+            onClick={() => void navigate({ to: '/kunde/neuer-vorgang' })}
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurueck
@@ -351,13 +351,13 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
 
         <div className="flex flex-wrap gap-2">
           <Link
-            to="/wizard"
+            to="/kunde/neuer-vorgang"
             className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
           >
             Neuen Vorgang anlegen
           </Link>
           <Link
-            to="/history"
+            to="/kunde/history"
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
           >
             Zu den Vorgängen
