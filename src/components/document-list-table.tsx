@@ -21,7 +21,7 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderD
           const total = items.reduce((sum, r) => sum + r.total, 0)
           const badge = getBadge(items)
           return (
-            <article key={id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <article key={id} className={`rounded-xl border border-slate-200 p-4 ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'bg-white'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
@@ -76,7 +76,7 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderD
               const total = items.reduce((sum, r) => sum + r.total, 0)
               const badge = getBadge(items)
               return (
-                <tr key={id} className="border-b border-slate-100 align-middle odd:bg-white even:bg-slate-50">
+                <tr key={id} className={`border-b border-slate-100 align-middle ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'odd:bg-white even:bg-slate-50'}`}>
                   <td className="px-2 py-2.5 text-xs text-slate-600">{items[0].createdAt.split(',')[0]}</td>
                   <td className="px-2 py-2.5 font-mono">{id}</td>
                   {showCompanyColumn && (
