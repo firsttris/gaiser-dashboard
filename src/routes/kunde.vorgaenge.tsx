@@ -5,6 +5,7 @@ import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
+import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { RecordActionsBar } from '../components/record-actions-bar'
@@ -16,6 +17,7 @@ function HistoryPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
+  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
 
   const companyRecords = records.filter((record) => record.company === selectedCompany?.name)
 
@@ -30,12 +32,13 @@ function HistoryPage() {
       if (typeFilter !== 'all' && record.type !== typeFilter) return false
       if (statusFilter !== 'all' && record.status !== statusFilter) return false
 
+      if (!matchesDateRange(record.createdAt, dateRange)) return false
       if (!query) return true
 
       const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
       return haystack.includes(query)
     })
-  }, [companyRecords, searchText, statusFilter, typeFilter])
+  }, [companyRecords, searchText, statusFilter, typeFilter, dateRange])
 
   const {
     selectedSet,
@@ -119,7 +122,7 @@ function HistoryPage() {
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Typ
             <select
@@ -158,6 +161,7 @@ function HistoryPage() {
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         <RecordActionsBar

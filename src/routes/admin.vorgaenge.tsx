@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { HistoryTable, shortDocId } from '../components/history-table'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
+import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, statusLabel } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { RecordActionsBar } from '../components/record-actions-bar'
@@ -15,6 +16,7 @@ function AdminVorgaengePage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
+  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -32,11 +34,12 @@ function AdminVorgaengePage() {
       if (companyFilter !== 'all' && record.company !== companyFilter) return false
       if (typeFilter !== 'all' && record.type !== typeFilter) return false
       if (statusFilter !== 'all' && record.status !== statusFilter) return false
+      if (!matchesDateRange(record.createdAt, dateRange)) return false
       if (!query) return true
       const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
       return haystack.includes(query)
     })
-  }, [companyFilter, records, searchText, statusFilter, typeFilter])
+  }, [companyFilter, records, searchText, statusFilter, typeFilter, dateRange])
 
   const {
     selectedSet,
@@ -108,7 +111,7 @@ function AdminVorgaengePage() {
           onExportCsv={exportSelectedAsCsv}
         />
 
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">
           <label className="text-sm font-semibold text-slate-700">
             Firma
             <select
@@ -159,6 +162,7 @@ function AdminVorgaengePage() {
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         {filteredRecords.length === 0 ? (

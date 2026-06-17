@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
+import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { groupAllByDocId, statusBadge } from '../utils/history-utils'
@@ -28,6 +29,7 @@ function AdminLieferscheinePage() {
   const [companyFilter, setCompanyFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchText, setSearchText] = useState('')
+  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -46,9 +48,10 @@ function AdminLieferscheinePage() {
         if (groupStatus !== statusFilter) return false
       }
       if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
+      if (!matchesDateRange(g.items[0].createdAt, dateRange)) return false
       return true
     })
-  }, [allGroups, companyFilter, statusFilter, searchText])
+  }, [allGroups, companyFilter, statusFilter, searchText, dateRange])
 
   function cancelDeliveryNoteGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
@@ -146,7 +149,7 @@ function AdminLieferscheinePage() {
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Firma
             <select
@@ -184,6 +187,7 @@ function AdminLieferscheinePage() {
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         {filteredGroups.length === 0 ? (

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
@@ -23,6 +24,7 @@ function RechnungenPage() {
   const { isLoggedIn, records, selectedCompany } = useAppState()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchText, setSearchText] = useState('')
+  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
 
   const companyRecords = records.filter((r) => r.company === selectedCompany?.name)
   const allGroups = useMemo(() => groupAllByDocId(companyRecords, 'invoiceId'), [companyRecords])
@@ -36,9 +38,10 @@ function RechnungenPage() {
         if (groupStatus !== statusFilter) return false
       }
       if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
+      if (!matchesDateRange(g.items[0].createdAt, dateRange)) return false
       return true
     })
-  }, [allGroups, statusFilter, searchText])
+  }, [allGroups, statusFilter, searchText, dateRange])
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
@@ -93,7 +96,7 @@ function RechnungenPage() {
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
           <label className="text-sm font-semibold text-slate-700">
             Status
             <select
@@ -117,6 +120,7 @@ function RechnungenPage() {
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         {filteredGroups.length === 0 ? (

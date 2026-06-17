@@ -26,7 +26,8 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtr
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{items[0].createdAt.split(',')[0]}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{items[0].createdAt.split(', ')[0]}</p>
+                  <p className="text-xs text-slate-400">{items[0].createdAt.split(', ')[1]}</p>
                   {showCompanyColumn && (
                     <p className="mt-1 text-sm font-semibold text-slate-900">{items[0].company}</p>
                   )}
@@ -69,7 +70,7 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtr
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="w-28 px-2 py-2 font-semibold">Datum</th>
+              <th className="w-32 px-2 py-2 font-semibold">Datum / Zeit</th>
               <th className="px-2 py-2 font-semibold">Nummer</th>
               {showCompanyColumn && <th className="w-36 px-2 py-2 font-semibold">Firma</th>}
               <th className="w-24 px-2 py-2 text-right font-semibold">Positionen</th>
@@ -85,7 +86,10 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtr
               const badge = getBadge(items)
               return (
                 <tr key={id} className={`border-b border-slate-100 align-middle ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'odd:bg-white even:bg-slate-50'}`}>
-                  <td className="px-2 py-2.5 text-xs text-slate-600">{items[0].createdAt.split(',')[0]}</td>
+                  <td className="px-2 py-2.5 text-xs">
+                    <span className="block text-slate-600">{items[0].createdAt.split(', ')[0]}</span>
+                    <span className="block text-slate-400">{items[0].createdAt.split(', ')[1]}</span>
+                  </td>
                   <td className="px-2 py-2.5 font-mono">{id}</td>
                   {showCompanyColumn && (
                     <td className="px-2 py-2.5 font-semibold text-slate-900">{items[0].company}</td>
