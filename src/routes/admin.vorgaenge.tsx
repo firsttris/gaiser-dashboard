@@ -49,8 +49,10 @@ function AdminVorgaengePage() {
     toggleRecordSelection,
     selectAllVisible,
     deselectVisible,
+    clearSelection,
   } = useRecordSelection(filteredRecords)
 
+  const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
   const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
   const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
   const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1 && !selectedHaveDeliveryNote
@@ -104,11 +106,13 @@ function AdminVorgaengePage() {
 
         <RecordActionsBar
           selectedCount={selectedCount}
+          selectedTotal={selectedTotal}
           canCreateDeliveryNote={canCreateCompanyDocuments}
           selectedHaveDeliveryNote={selectedHaveDeliveryNote}
           multipleCompaniesSelected={selectedCompanies.length > 1}
           onCreateDeliveryNote={createDeliveryNotes}
           onExportCsv={exportSelectedAsCsv}
+          onClearSelection={clearSelection}
         />
 
         <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">

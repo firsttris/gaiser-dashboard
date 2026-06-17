@@ -48,8 +48,10 @@ function HistoryPage() {
     toggleRecordSelection,
     selectAllVisible,
     deselectVisible,
+    clearSelection,
   } = useRecordSelection(filteredRecords)
 
+  const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
   const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
   const canCreateDeliveryNote = selectedCount > 0 && !selectedHaveDeliveryNote
 
@@ -166,10 +168,12 @@ function HistoryPage() {
 
         <RecordActionsBar
           selectedCount={selectedCount}
+          selectedTotal={selectedTotal}
           canCreateDeliveryNote={canCreateDeliveryNote}
           selectedHaveDeliveryNote={selectedHaveDeliveryNote}
           onCreateDeliveryNote={createCombinedDeliveryNote}
           onExportCsv={exportSelectedAsCsv}
+          onClearSelection={clearSelection}
         />
 
         {filteredRecords.length === 0 ? (
