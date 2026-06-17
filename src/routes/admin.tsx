@@ -121,9 +121,8 @@ function AdminPage() {
           {isMenuOpen && (
             <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
               <NavLink
-                to="/admin"
+                to="/admin/vorgaenge"
                 compact
-                activeOptions={{ exact: true }}
                 onClick={() => setIsMenuOpen(false)}
                 icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
               >
@@ -149,16 +148,16 @@ function AdminPage() {
               </NavLink>
 
               <NavLink
-                to="/admin/products"
+                to="/admin/material"
                 compact
                 onClick={() => setIsMenuOpen(false)}
                 icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
               >
-                Produkte
+                Material
               </NavLink>
 
               <NavLink
-                to="/admin/companies"
+                to="/admin/firmen"
                 compact
                 onClick={() => setIsMenuOpen(false)}
                 icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
@@ -167,7 +166,7 @@ function AdminPage() {
               </NavLink>
 
               <NavLink
-                to="/admin/sites"
+                to="/admin/baustellen"
                 compact
                 onClick={() => setIsMenuOpen(false)}
                 icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
@@ -194,8 +193,7 @@ function AdminPage() {
 
           <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
             <NavLink
-              to="/admin"
-              activeOptions={{ exact: true }}
+              to="/admin/vorgaenge"
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
               Vorgänge
@@ -213,19 +211,19 @@ function AdminPage() {
               Rechnungen
             </NavLink>
             <NavLink
-              to="/admin/products"
+              to="/admin/material"
               icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
             >
-              Produkte
+              Material
             </NavLink>
             <NavLink
-              to="/admin/companies"
+              to="/admin/firmen"
               icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
             >
               Firmen
             </NavLink>
             <NavLink
-              to="/admin/sites"
+              to="/admin/baustellen"
               icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
             >
               Baustellen

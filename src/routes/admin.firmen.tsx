@@ -4,7 +4,7 @@ import { useAppState } from '../state/app-state'
 import { useCompanyForm } from '../hooks/use-company-form'
 import { CompanyInput, PinInput, PriceCategorySelect } from '../components/company-form-inputs'
 
-export const Route = createFileRoute('/admin/companies')({ component: AdminCompaniesPage })
+export const Route = createFileRoute('/admin/firmen')({ component: AdminCompaniesPage })
 
 function AdminCompaniesPage() {
   const { companies, createCompany, updateCompany, deleteCompany } = useAppState()

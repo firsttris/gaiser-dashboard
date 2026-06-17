@@ -5,7 +5,7 @@ import { useProductForm } from '../hooks/use-product-form'
 import { ProductNameInput, ProductUnitInput, ProductFlowSelect, PriceField } from '../components/product-form-inputs'
 import type { Product } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/products')({ component: AdminProductsPage })
+export const Route = createFileRoute('/admin/material')({ component: AdminProductsPage })
 
 type EditFormState = {
   name: string
@@ -329,9 +329,9 @@ function AdminProductsPage() {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-      <h2 className="font-title text-5xl text-slate-900">Produkte</h2>
+      <h2 className="font-title text-5xl text-slate-900">Material</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Produkte koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
+        Material koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
       </p>
 
       <form onSubmit={submitProduct} className="mt-4 grid gap-4 md:grid-cols-6">
@@ -387,7 +387,7 @@ function AdminProductsPage() {
       <div className="mt-6 space-y-8">
         <div>
           <h3 className="font-title text-3xl text-slate-900">Annahme</h3>
-          <p className="mt-1 text-sm text-slate-600">Produkte fuer Kundenanlieferungen.</p>
+          <p className="mt-1 text-sm text-slate-600">Material fuer Kundenanlieferungen.</p>
 
           <ProductCards type="dropoff" items={dropoffProducts} {...listProps} />
           <ProductTable type="dropoff" items={dropoffProducts} {...listProps} />
@@ -395,7 +395,7 @@ function AdminProductsPage() {
 
         <div>
           <h3 className="font-title text-3xl text-slate-900">Verkauf</h3>
-          <p className="mt-1 text-sm text-slate-600">Produkte fuer Materialabholung durch den Kunden.</p>
+          <p className="mt-1 text-sm text-slate-600">Material fuer Abholung durch den Kunden.</p>
 
           <ProductCards type="pickup" items={pickupProducts} {...listProps} />
           <ProductTable type="pickup" items={pickupProducts} {...listProps} />

@@ -61,7 +61,7 @@ export function TopNav() {
             </NavLink>
 
             <NavLink
-              to="/kunde/history"
+              to="/kunde/vorgaenge"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<History className="h-4 w-4" strokeWidth={2.3} />}
@@ -110,7 +110,7 @@ export function TopNav() {
             Neuer Vorgang
           </NavLink>
           <NavLink
-            to="/kunde/history"
+            to="/kunde/vorgaenge"
             icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
             Vorgänge

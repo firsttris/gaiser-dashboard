@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/sites')({ component: AdminSitesPage })
+export const Route = createFileRoute('/admin/baustellen')({ component: AdminSitesPage })
 
 function AdminSitesPage() {
   const { constructionSites, createConstructionSite, updateConstructionSite, deleteConstructionSite } = useAppState()

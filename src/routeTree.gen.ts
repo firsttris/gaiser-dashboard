@@ -13,15 +13,16 @@ import { Route as KundeRouteImport } from './routes/kunde'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
 import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
 import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
 import { Route as KundeLieferscheineRouteImport } from './routes/kunde.lieferscheine'
-import { Route as KundeHistoryRouteImport } from './routes/kunde.history'
-import { Route as AdminSitesRouteImport } from './routes/admin.sites'
+import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
 import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
-import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminMaterialRouteImport } from './routes/admin.material'
 import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
-import { Route as AdminCompaniesRouteImport } from './routes/admin.companies'
+import { Route as AdminFirmenRouteImport } from './routes/admin.firmen'
+import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
 import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
 import { Route as KundeNeuerVorgangDropoffRouteImport } from './routes/kunde.neuer-vorgang.dropoff'
@@ -46,6 +47,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const KundeVorgaengeRoute = KundeVorgaengeRouteImport.update({
+  id: '/vorgaenge',
+  path: '/vorgaenge',
+  getParentRoute: () => KundeRoute,
+} as any)
 const KundeRechnungenRoute = KundeRechnungenRouteImport.update({
   id: '/rechnungen',
   path: '/rechnungen',
@@ -61,14 +67,9 @@ const KundeLieferscheineRoute = KundeLieferscheineRouteImport.update({
   path: '/lieferscheine',
   getParentRoute: () => KundeRoute,
 } as any)
-const KundeHistoryRoute = KundeHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => KundeRoute,
-} as any)
-const AdminSitesRoute = AdminSitesRouteImport.update({
-  id: '/sites',
-  path: '/sites',
+const AdminVorgaengeRoute = AdminVorgaengeRouteImport.update({
+  id: '/vorgaenge',
+  path: '/vorgaenge',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminRechnungenRoute = AdminRechnungenRouteImport.update({
@@ -76,9 +77,9 @@ const AdminRechnungenRoute = AdminRechnungenRouteImport.update({
   path: '/rechnungen',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProductsRoute = AdminProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
+const AdminMaterialRoute = AdminMaterialRouteImport.update({
+  id: '/material',
+  path: '/material',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
@@ -86,9 +87,14 @@ const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
   path: '/lieferscheine',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminCompaniesRoute = AdminCompaniesRouteImport.update({
-  id: '/companies',
-  path: '/companies',
+const AdminFirmenRoute = AdminFirmenRouteImport.update({
+  id: '/firmen',
+  path: '/firmen',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
+  id: '/baustellen',
+  path: '/baustellen',
   getParentRoute: () => AdminRoute,
 } as any)
 const KundeNeuerVorgangIndexRoute = KundeNeuerVorgangIndexRouteImport.update({
@@ -112,15 +118,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
-  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/firmen': typeof AdminFirmenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
-  '/admin/sites': typeof AdminSitesRoute
-  '/kunde/history': typeof KundeHistoryRoute
+  '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
+  '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/admin/': typeof AdminIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
@@ -129,14 +136,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
-  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/firmen': typeof AdminFirmenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
-  '/admin/sites': typeof AdminSitesRoute
-  '/kunde/history': typeof KundeHistoryRoute
+  '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/rechnungen': typeof KundeRechnungenRoute
+  '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/admin': typeof AdminIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
@@ -147,15 +155,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
-  '/admin/companies': typeof AdminCompaniesRoute
+  '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/firmen': typeof AdminFirmenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
-  '/admin/sites': typeof AdminSitesRoute
-  '/kunde/history': typeof KundeHistoryRoute
+  '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
+  '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/admin/': typeof AdminIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
@@ -167,15 +176,16 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
-    | '/admin/companies'
+    | '/admin/baustellen'
+    | '/admin/firmen'
     | '/admin/lieferscheine'
-    | '/admin/products'
+    | '/admin/material'
     | '/admin/rechnungen'
-    | '/admin/sites'
-    | '/kunde/history'
+    | '/admin/vorgaenge'
     | '/kunde/lieferscheine'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
+    | '/kunde/vorgaenge'
     | '/admin/'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
@@ -184,14 +194,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kunde'
-    | '/admin/companies'
+    | '/admin/baustellen'
+    | '/admin/firmen'
     | '/admin/lieferscheine'
-    | '/admin/products'
+    | '/admin/material'
     | '/admin/rechnungen'
-    | '/admin/sites'
-    | '/kunde/history'
+    | '/admin/vorgaenge'
     | '/kunde/lieferscheine'
     | '/kunde/rechnungen'
+    | '/kunde/vorgaenge'
     | '/admin'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
@@ -201,15 +212,16 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
-    | '/admin/companies'
+    | '/admin/baustellen'
+    | '/admin/firmen'
     | '/admin/lieferscheine'
-    | '/admin/products'
+    | '/admin/material'
     | '/admin/rechnungen'
-    | '/admin/sites'
-    | '/kunde/history'
+    | '/admin/vorgaenge'
     | '/kunde/lieferscheine'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
+    | '/kunde/vorgaenge'
     | '/admin/'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
@@ -252,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/kunde/vorgaenge': {
+      id: '/kunde/vorgaenge'
+      path: '/vorgaenge'
+      fullPath: '/kunde/vorgaenge'
+      preLoaderRoute: typeof KundeVorgaengeRouteImport
+      parentRoute: typeof KundeRoute
+    }
     '/kunde/rechnungen': {
       id: '/kunde/rechnungen'
       path: '/rechnungen'
@@ -273,18 +292,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KundeLieferscheineRouteImport
       parentRoute: typeof KundeRoute
     }
-    '/kunde/history': {
-      id: '/kunde/history'
-      path: '/history'
-      fullPath: '/kunde/history'
-      preLoaderRoute: typeof KundeHistoryRouteImport
-      parentRoute: typeof KundeRoute
-    }
-    '/admin/sites': {
-      id: '/admin/sites'
-      path: '/sites'
-      fullPath: '/admin/sites'
-      preLoaderRoute: typeof AdminSitesRouteImport
+    '/admin/vorgaenge': {
+      id: '/admin/vorgaenge'
+      path: '/vorgaenge'
+      fullPath: '/admin/vorgaenge'
+      preLoaderRoute: typeof AdminVorgaengeRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/rechnungen': {
@@ -294,11 +306,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRechnungenRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/products': {
-      id: '/admin/products'
-      path: '/products'
-      fullPath: '/admin/products'
-      preLoaderRoute: typeof AdminProductsRouteImport
+    '/admin/material': {
+      id: '/admin/material'
+      path: '/material'
+      fullPath: '/admin/material'
+      preLoaderRoute: typeof AdminMaterialRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/lieferscheine': {
@@ -308,11 +320,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLieferscheineRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/companies': {
-      id: '/admin/companies'
-      path: '/companies'
-      fullPath: '/admin/companies'
-      preLoaderRoute: typeof AdminCompaniesRouteImport
+    '/admin/firmen': {
+      id: '/admin/firmen'
+      path: '/firmen'
+      fullPath: '/admin/firmen'
+      preLoaderRoute: typeof AdminFirmenRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/baustellen': {
+      id: '/admin/baustellen'
+      path: '/baustellen'
+      fullPath: '/admin/baustellen'
+      preLoaderRoute: typeof AdminBaustellenRouteImport
       parentRoute: typeof AdminRoute
     }
     '/kunde/neuer-vorgang/': {
@@ -340,20 +359,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminCompaniesRoute: typeof AdminCompaniesRoute
+  AdminBaustellenRoute: typeof AdminBaustellenRoute
+  AdminFirmenRoute: typeof AdminFirmenRoute
   AdminLieferscheineRoute: typeof AdminLieferscheineRoute
-  AdminProductsRoute: typeof AdminProductsRoute
+  AdminMaterialRoute: typeof AdminMaterialRoute
   AdminRechnungenRoute: typeof AdminRechnungenRoute
-  AdminSitesRoute: typeof AdminSitesRoute
+  AdminVorgaengeRoute: typeof AdminVorgaengeRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminCompaniesRoute: AdminCompaniesRoute,
+  AdminBaustellenRoute: AdminBaustellenRoute,
+  AdminFirmenRoute: AdminFirmenRoute,
   AdminLieferscheineRoute: AdminLieferscheineRoute,
-  AdminProductsRoute: AdminProductsRoute,
+  AdminMaterialRoute: AdminMaterialRoute,
   AdminRechnungenRoute: AdminRechnungenRoute,
-  AdminSitesRoute: AdminSitesRoute,
+  AdminVorgaengeRoute: AdminVorgaengeRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -375,17 +396,17 @@ const KundeNeuerVorgangRouteWithChildren =
   KundeNeuerVorgangRoute._addFileChildren(KundeNeuerVorgangRouteChildren)
 
 interface KundeRouteChildren {
-  KundeHistoryRoute: typeof KundeHistoryRoute
   KundeLieferscheineRoute: typeof KundeLieferscheineRoute
   KundeNeuerVorgangRoute: typeof KundeNeuerVorgangRouteWithChildren
   KundeRechnungenRoute: typeof KundeRechnungenRoute
+  KundeVorgaengeRoute: typeof KundeVorgaengeRoute
 }
 
 const KundeRouteChildren: KundeRouteChildren = {
-  KundeHistoryRoute: KundeHistoryRoute,
   KundeLieferscheineRoute: KundeLieferscheineRoute,
   KundeNeuerVorgangRoute: KundeNeuerVorgangRouteWithChildren,
   KundeRechnungenRoute: KundeRechnungenRoute,
+  KundeVorgaengeRoute: KundeVorgaengeRoute,
 }
 
 const KundeRouteWithChildren = KundeRoute._addFileChildren(KundeRouteChildren)
