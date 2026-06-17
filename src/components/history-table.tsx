@@ -135,10 +135,6 @@ export function HistoryTable({
                   <dd className="font-semibold text-slate-800">{money(record.unitPrice)}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Gesamt</dt>
-                  <dd className="font-semibold text-slate-900">{money(record.total)}</dd>
-                </div>
-                <div>
                   <dt className="text-slate-500">Status</dt>
                   <dd className="mt-0.5">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
@@ -182,18 +178,17 @@ export function HistoryTable({
                 />
               </th>
               <th className="w-28 px-2 py-2">Zeit</th>
-              {showCompanyColumn && <th className="hidden w-28 px-2 py-2 lg:table-cell">Firma</th>}
               <th className="w-20 px-2 py-2">Typ</th>
+              {showCompanyColumn && <th className="hidden w-28 px-2 py-2 lg:table-cell">Firma</th>}
               <th className="px-2 py-2">Produkt</th>
               <th className="w-16 px-2 py-2">Menge</th>
-              <th className="w-36 px-2 py-2">Dateien</th>
-              <th className="w-28 px-2 py-2">Gesamt</th>
+              <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Baustelle</th>
               {onStatusChange ? (
                 <th className="w-32 px-2 py-2">Status</th>
               ) : (
                 <th className="w-24 px-2 py-2">Status</th>
               )}
-              <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Baustelle</th>
+              <th className="w-36 px-2 py-2">Dateien</th>
             </tr>
           </thead>
           <tbody>
@@ -218,16 +213,40 @@ export function HistoryTable({
                     <span className="block text-slate-600">{record.createdAt.split(', ')[0]}</span>
                     <span className="block text-slate-400">{record.createdAt.split(', ')[1]}</span>
                   </td>
+                  <td className="px-2 py-2">{flowLabel(record.type)}</td>
                   {showCompanyColumn && (
                     <td className="hidden px-2 py-2 font-semibold text-slate-900 lg:table-cell">{record.company}</td>
                   )}
-                  <td className="px-2 py-2">{flowLabel(record.type)}</td>
                   <td className="px-2 py-2">
                     <p className="truncate" title={record.productName}>{record.productName}</p>
                   </td>
                   <td className="px-2 py-2">
                     {record.amount} {record.unit}
                   </td>
+                  <td className={`hidden px-2 py-2 text-slate-600 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
+                    <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.constructionSiteName || '-'}</p>
+                  </td>
+                  {onStatusChange ? (
+                    <td className="px-2 py-2">
+                      <select
+                        value={record.status}
+                        onChange={(event) => onStatusChange(record.id, event.target.value as RecordStatus)}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-normal outline-none focus:border-slate-800"
+                      >
+                        {statusStages.map((stage) => (
+                          <option key={stage.value} value={stage.value}>
+                            {stage.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  ) : (
+                    <td className="px-2 py-2">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
+                        {statusBadge(record.status).label}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-1">
                       {palette && (
@@ -259,31 +278,6 @@ export function HistoryTable({
                         </button>
                       )}
                     </div>
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-2">{money(record.total)}</td>
-                  {onStatusChange ? (
-                    <td className="px-2 py-2">
-                      <select
-                        value={record.status}
-                        onChange={(event) => onStatusChange(record.id, event.target.value as RecordStatus)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-normal outline-none focus:border-slate-800"
-                      >
-                        {statusStages.map((stage) => (
-                          <option key={stage.value} value={stage.value}>
-                            {stage.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  ) : (
-                    <td className="px-2 py-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
-                        {statusBadge(record.status).label}
-                      </span>
-                    </td>
-                  )}
-                  <td className={`hidden px-2 py-2 text-slate-600 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
-                    <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.constructionSiteName || '-'}</p>
                   </td>
                 </tr>
               )

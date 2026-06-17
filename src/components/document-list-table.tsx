@@ -8,6 +8,7 @@ export type BadgeConfig = { label: string; className: string }
 interface Props {
   groups: DocumentGroup[]
   showCompanyColumn?: boolean
+  showTotalColumn?: boolean
   getBadge: (items: RecordItem[]) => BadgeConfig
   getExtraBadges?: (items: RecordItem[]) => BadgeConfig[]
   renderDateien: (id: string, items: RecordItem[]) => ReactNode
@@ -20,6 +21,7 @@ interface Props {
 export function DocumentListTable({
   groups,
   showCompanyColumn,
+  showTotalColumn = true,
   getBadge,
   getExtraBadges,
   renderDateien,
@@ -74,10 +76,12 @@ export function DocumentListTable({
                   <dt className="text-slate-500">Positionen</dt>
                   <dd className="font-semibold text-slate-800">{items.length}</dd>
                 </div>
-                <div>
-                  <dt className="text-slate-500">Gesamt</dt>
-                  <dd className="font-semibold text-slate-900">{money(total)}</dd>
-                </div>
+                {showTotalColumn && (
+                  <div>
+                    <dt className="text-slate-500">Gesamt</dt>
+                    <dd className="font-semibold text-slate-900">{money(total)}</dd>
+                  </div>
+                )}
               </dl>
               <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                 {renderDateien(id, items)}
@@ -101,7 +105,7 @@ export function DocumentListTable({
               <th className="px-2 py-2 font-semibold">Nummer</th>
               {showCompanyColumn && <th className="w-36 px-2 py-2 font-semibold">Firma</th>}
               <th className="w-24 px-2 py-2 text-right font-semibold">Positionen</th>
-              <th className="w-28 px-2 py-2 text-right font-semibold">Gesamt</th>
+              {showTotalColumn && <th className="w-28 px-2 py-2 text-right font-semibold">Gesamt</th>}
               <th className="w-40 px-2 py-2 font-semibold">Status</th>
               <th className="px-2 py-2 font-semibold">Dateien</th>
               {renderActions && <th className="w-40 px-2 py-2 font-semibold">Aktionen</th>}
@@ -134,9 +138,11 @@ export function DocumentListTable({
                     <td className="px-2 py-2.5 font-semibold text-slate-900">{items[0].company}</td>
                   )}
                   <td className="px-2 py-2.5 text-right text-slate-700">{items.length}</td>
-                  <td className="whitespace-nowrap px-2 py-2.5 text-right">
-                    {money(total)}
-                  </td>
+                  {showTotalColumn && (
+                    <td className="whitespace-nowrap px-2 py-2.5 text-right">
+                      {money(total)}
+                    </td>
+                  )}
                   <td className="px-2 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
