@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, LogOut, MapPinned, Menu, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
+import { Blocks, Building2, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
@@ -121,6 +121,15 @@ function AdminPage() {
           {isMenuOpen && (
             <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
               <NavLink
+                to="/admin/neuer-vorgang"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Neuer Vorgang
+              </NavLink>
+
+              <NavLink
                 to="/admin/vorgaenge"
                 compact
                 onClick={() => setIsMenuOpen(false)}
@@ -192,6 +201,12 @@ function AdminPage() {
           )}
 
           <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
+            <NavLink
+              to="/admin/neuer-vorgang"
+              icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Neuer Vorgang
+            </NavLink>
             <NavLink
               to="/admin/vorgaenge"
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}

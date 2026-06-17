@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { HistoryTable, shortDocId } from '../components/history-table'
 import { useRecordSelection } from '../hooks/use-record-selection'
@@ -99,9 +99,17 @@ function AdminVorgaengePage() {
             <h2 className="font-title text-4xl text-slate-900">Vorgänge</h2>
             <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgaenge ueber alle Firmen.</p>
           </div>
-          <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
-            {filteredRecords.length} von {records.length} Eintraegen
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
+              {filteredRecords.length} von {records.length} Eintraegen
+            </p>
+            <Link
+              to="/admin/neuer-vorgang"
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+            >
+              Neuer Vorgang
+            </Link>
+          </div>
         </div>
 
         <RecordActionsBar

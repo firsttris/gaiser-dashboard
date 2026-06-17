@@ -56,6 +56,7 @@ type CreateRecordInput = {
   product: Product
   amount: number
   constructionSiteName: string
+  company?: Company
 }
 
 type CreateCompanyInput = {
@@ -483,8 +484,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setConstructionSites(constructionSitesSeed)
         setRecords([])
       },
-      createRecord: ({ type, product, amount, constructionSiteName }: CreateRecordInput) => {
-        if (!selectedCompany) return
+      createRecord: ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
+        const activeCompany = company ?? selectedCompany
+        if (!activeCompany) return
 
         const cleanedConstructionSiteName = normalizeConstructionSiteName(constructionSiteName)
         if (!cleanedConstructionSiteName) return
@@ -504,11 +506,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           setConstructionSites((prev) => [...prev, resolvedConstructionSite])
         }
 
-        const unitPrice = getUnitPrice(product, type, selectedCompany.priceCategory)
+        const unitPrice = getUnitPrice(product, type, activeCompany.priceCategory)
         const total = unitPrice * amount
         const nextRecord: RecordItem = {
           id: Date.now(),
-          company: selectedCompany.name,
+          company: activeCompany.name,
           constructionSiteId: resolvedConstructionSite.id,
           constructionSiteName: resolvedConstructionSite.name,
           type,

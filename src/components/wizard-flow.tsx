@@ -1,7 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
-import { useAppState, type FlowType } from '../state/app-state'
+import { useAppState, type Company, type FlowType } from '../state/app-state'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 
 type ProductVisual = {
@@ -49,8 +49,21 @@ function money(value: number) {
   }).format(value)
 }
 
-export function WizardFlow({ flowType }: { flowType: FlowType }) {
-  const { products, selectedCompany, constructionSites, createRecord } = useAppState()
+export function WizardFlow({
+  flowType,
+  company,
+  onExit,
+  vorgaengeTo = '/kunde/vorgaenge',
+}: {
+  flowType: FlowType
+  /** Overrides the logged-in customer's company, used by the admin flow to create a Vorgang on behalf of a customer. */
+  company?: Company
+  /** Called instead of navigating to the customer wizard start when set, used by the admin flow to return to its own selection step. */
+  onExit?: () => void
+  vorgaengeTo?: string
+}) {
+  const { products, selectedCompany: loggedInCompany, constructionSites, createRecord } = useAppState()
+  const selectedCompany = company ?? loggedInCompany
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
@@ -94,6 +107,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
       product: selectedProduct,
       amount: parsedAmount,
       constructionSiteName,
+      company,
     })
 
     setSuccessRecord({
@@ -115,6 +129,11 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
     return (
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <h3 className="font-title text-4xl text-slate-900">Material und Menge</h3>
+        {company && (
+          <p className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-600">
+            Kunde: <strong>{company.name}</strong>
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="text-sm font-semibold text-slate-700">Material</label>
@@ -195,7 +214,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => void navigate({ to: '/kunde/neuer-vorgang' })}
+            onClick={() => (onExit ? onExit() : void navigate({ to: '/kunde/neuer-vorgang' }))}
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurueck
@@ -350,14 +369,24 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
         </dl>
 
         <div className="flex flex-wrap gap-2">
+          {onExit ? (
+            <button
+              type="button"
+              onClick={onExit}
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            >
+              Neuen Vorgang anlegen
+            </button>
+          ) : (
+            <Link
+              to="/kunde/neuer-vorgang"
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+            >
+              Neuen Vorgang anlegen
+            </Link>
+          )}
           <Link
-            to="/kunde/neuer-vorgang"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
-          >
-            Neuen Vorgang anlegen
-          </Link>
-          <Link
-            to="/kunde/vorgaenge"
+            to={vorgaengeTo}
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
           >
             Zu den Vorgängen
