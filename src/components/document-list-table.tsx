@@ -12,25 +12,51 @@ interface Props {
   getExtraBadges?: (items: RecordItem[]) => BadgeConfig[]
   renderDateien: (id: string, items: RecordItem[]) => ReactNode
   renderActions?: (id: string, items: RecordItem[]) => ReactNode
+  selectedIds?: Set<string>
+  onSelectionChange?: (id: string, checked: boolean) => void
+  isSelectable?: (items: RecordItem[]) => boolean
 }
 
-export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtraBadges, renderDateien, renderActions }: Props) {
+export function DocumentListTable({
+  groups,
+  showCompanyColumn,
+  getBadge,
+  getExtraBadges,
+  renderDateien,
+  renderActions,
+  selectedIds,
+  onSelectionChange,
+  isSelectable,
+}: Props) {
+  const selectable = selectedIds !== undefined && onSelectionChange !== undefined
   return (
     <>
       <div className="mt-4 space-y-3 md:hidden">
         {groups.map(({ id, items }) => {
           const total = items.reduce((sum, r) => sum + r.total, 0)
           const badge = getBadge(items)
+          const rowSelectable = selectable && (isSelectable?.(items) ?? true)
           return (
             <article key={id} className={`rounded-xl border border-slate-200 p-4 ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'bg-white'}`}>
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{items[0].createdAt.split(', ')[0]}</p>
-                  <p className="text-xs text-slate-400">{items[0].createdAt.split(', ')[1]}</p>
-                  {showCompanyColumn && (
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{items[0].company}</p>
+                <div className="flex min-w-0 items-start gap-2">
+                  {selectable && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds!.has(id)}
+                      disabled={!rowSelectable}
+                      onChange={(e) => onSelectionChange!(id, e.target.checked)}
+                      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 disabled:opacity-40"
+                    />
                   )}
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{items[0].createdAt.split(', ')[0]}</p>
+                    <p className="text-xs text-slate-400">{items[0].createdAt.split(', ')[1]}</p>
+                    {showCompanyColumn && (
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{items[0].company}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
@@ -70,6 +96,7 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtr
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              {selectable && <th className="w-8 px-2 py-2" />}
               <th className="w-32 px-2 py-2 font-semibold">Datum / Zeit</th>
               <th className="px-2 py-2 font-semibold">Nummer</th>
               {showCompanyColumn && <th className="w-36 px-2 py-2 font-semibold">Firma</th>}
@@ -84,8 +111,20 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtr
             {groups.map(({ id, items }) => {
               const total = items.reduce((sum, r) => sum + r.total, 0)
               const badge = getBadge(items)
+              const rowSelectable = selectable && (isSelectable?.(items) ?? true)
               return (
                 <tr key={id} className={`border-b border-slate-100 align-middle ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'odd:bg-white even:bg-slate-50'}`}>
+                  {selectable && (
+                    <td className="px-2 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds!.has(id)}
+                        disabled={!rowSelectable}
+                        onChange={(e) => onSelectionChange!(id, e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 disabled:opacity-40"
+                      />
+                    </td>
+                  )}
                   <td className="px-2 py-2.5 text-xs">
                     <span className="block text-slate-600">{items[0].createdAt.split(', ')[0]}</span>
                     <span className="block text-slate-400">{items[0].createdAt.split(', ')[1]}</span>

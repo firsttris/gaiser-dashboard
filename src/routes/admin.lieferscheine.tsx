@@ -5,7 +5,7 @@ import { ConfirmDialog } from '../components/confirm-dialog'
 import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId, statusBadge } from '../utils/history-utils'
+import { groupAllByDocId, money, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { shortDocId } from '../components/history-table'
 
@@ -30,6 +30,9 @@ function AdminLieferscheinePage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
+  const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -65,6 +68,42 @@ function AdminLieferscheinePage() {
     const invoiceNo = downloadInvoicePdf(invoiceItems, shortCode, deliveryNoteId, undefined, isReverseCharge)
     invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
+  }
+
+  function isSelectableGroup(items: RecordItem[]) {
+    return getBadge(items).label === 'Lieferschein'
+  }
+
+  const selectedGroups = useMemo(
+    () => allGroups.filter((g) => selectedIds.has(g.id)),
+    [allGroups, selectedIds],
+  )
+  const selectedCompanies = useMemo(
+    () => new Set(selectedGroups.map((g) => g.items[0].company)),
+    [selectedGroups],
+  )
+  const selectedTotal = useMemo(
+    () => selectedGroups.reduce((sum, g) => sum + g.items.reduce((s, r) => s + r.total, 0), 0),
+    [selectedGroups],
+  )
+
+  function toggleSelection(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  function createSammelrechnung(isReverseCharge: boolean) {
+    const invoiceItems = selectedGroups.flatMap((g) => g.items)
+    const deliveryNoteRefs = selectedGroups.map((g) => g.id).join(', ')
+    const shortCode = companies.find((c) => c.name === invoiceItems[0].company)?.shortCode
+    const invoiceNo = downloadInvoicePdf(invoiceItems, shortCode, deliveryNoteRefs, undefined, isReverseCharge)
+    invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
+    assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
+    setSelectedIds(new Set())
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -190,6 +229,38 @@ function AdminLieferscheinePage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 p-3">
+            <div className="text-sm text-emerald-800">
+              <span className="font-semibold">{selectedIds.size} Lieferschein{selectedIds.size !== 1 ? 'e' : ''}</span> ausgewaehlt
+              {' · '}
+              <span className="font-semibold">{money(selectedTotal)}</span>
+              {selectedCompanies.size > 1 && (
+                <span className="ml-2 font-semibold text-amber-700">
+                  Achtung: Lieferscheine gehoeren zu {selectedCompanies.size} verschiedenen Firmen.
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Auswahl aufheben
+              </button>
+              <button
+                type="button"
+                disabled={selectedCompanies.size !== 1}
+                onClick={() => { setSammelReverseCharge(false); setSammelrechnungOpen(true) }}
+                className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+              >
+                Sammelrechnung erstellen
+              </button>
+            </div>
+          </div>
+        )}
+
         {filteredGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Lieferscheine fuer die aktuellen Filter vorhanden.
@@ -201,6 +272,9 @@ function AdminLieferscheinePage() {
             getBadge={getBadge}
             renderDateien={renderDateien}
             renderActions={renderActions}
+            selectedIds={selectedIds}
+            onSelectionChange={toggleSelection}
+            isSelectable={isSelectableGroup}
           />
         )}
       </article>
@@ -249,6 +323,57 @@ function AdminLieferscheinePage() {
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Rechnung erstellen
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {sammelrechnungOpen && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setSammelrechnungOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-slate-900">Sammelrechnung erstellen</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {selectedGroups.length} Lieferschein{selectedGroups.length !== 1 ? 'e' : ''} fuer {selectedGroups[0]?.items[0].company} · {money(selectedTotal)}
+            </p>
+            <label className="mt-4 flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={sammelReverseCharge}
+                onChange={(e) => setSammelReverseCharge(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
+            </label>
+            {sammelReverseCharge && (
+              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSammelrechnungOpen(false)}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  createSammelrechnung(sammelReverseCharge)
+                  setSammelrechnungOpen(false)
+                }}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Sammelrechnung erstellen
               </button>
             </div>
           </div>
