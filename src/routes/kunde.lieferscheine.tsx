@@ -142,6 +142,7 @@ function LieferscheinePage() {
           <DocumentListTable
             groups={filteredGroups}
             getBadge={getBadge}
+            getExtraBadges={(items) => items[0].invoiceReverseCharge ? [{ label: '§13b UStG', className: 'bg-purple-100 text-purple-700' }] : []}
             renderDateien={renderDateien}
           />
         )}
