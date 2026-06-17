@@ -9,7 +9,7 @@ import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/admin/rechnungen')({ component: AdminRechnungenPage })
 
@@ -30,12 +30,22 @@ function AdminRechnungenPage() {
     allGroups, filteredGroups,
   } = useDocumentGroupFilters(records, 'invoiceId', invoiceStatusFilterOf, { withCompanyFilter: true })
 
-  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, clearSelection } = useGroupSelection(allGroups)
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(allGroups)
 
   const selectedAllOpen = useMemo(
     () => selectedGroups.length > 0 && selectedGroups.every((g) => invoiceBadge(g.items).label === 'Rechnung'),
     [selectedGroups],
   )
+
+  function isSelectableGroup(items: RecordItem[]) {
+    return invoiceBadge(items).label !== 'Storniert'
+  }
+
+  const selectableFilteredGroups = useMemo(
+    () => filteredGroups.filter((g) => isSelectableGroup(g.items)),
+    [filteredGroups],
+  )
+  const areAllVisibleSelected = selectableFilteredGroups.length > 0 && selectableFilteredGroups.every((g) => selectedIds.has(g.id))
 
   function cancelGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
@@ -43,10 +53,6 @@ function AdminRechnungenPage() {
     downloadStornoDoc(items, items[0].company, cancelId, originalDocId)
     assignCancel(items.map((r) => r.id), cancelId)
     items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
-  function isSelectableGroup(items: RecordItem[]) {
-    return invoiceBadge(items).label !== 'Storniert'
   }
 
   function stornoSelection() {
@@ -57,6 +63,13 @@ function AdminRechnungenPage() {
   function bezahltSelection() {
     selectedGroups.forEach((g) => g.items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')))
     clearSelection()
+  }
+
+  function exportSelectedAsCsv() {
+    if (selectedGroups.length === 0) return
+    const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), true)
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsvFile(`admin-rechnungen-${stamp}.csv`, csv)
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -149,6 +162,10 @@ function AdminRechnungenPage() {
           onClear={clearSelection}
           actions={[
             {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+            {
               label: 'Stornieren',
               onClick: () => setPendingAction({
                 action: stornoSelection,
@@ -183,6 +200,8 @@ function AdminRechnungenPage() {
             selectedIds={selectedIds}
             onSelectionChange={toggleSelection}
             isSelectable={isSelectableGroup}
+            areAllSelected={areAllVisibleSelected}
+            onSelectAll={(checked) => (checked ? selectAllVisible(selectableFilteredGroups) : deselectVisible(selectableFilteredGroups))}
           />
         )}
       </article>

@@ -16,6 +16,8 @@ interface Props {
   selectedIds?: Set<string>
   onSelectionChange?: (id: string, checked: boolean) => void
   isSelectable?: (items: RecordItem[]) => boolean
+  areAllSelected?: boolean
+  onSelectAll?: (checked: boolean) => void
 }
 
 export function DocumentListTable({
@@ -29,6 +31,8 @@ export function DocumentListTable({
   selectedIds,
   onSelectionChange,
   isSelectable,
+  areAllSelected,
+  onSelectAll,
 }: Props) {
   const selectable = selectedIds !== undefined && onSelectionChange !== undefined
   return (
@@ -100,7 +104,19 @@ export function DocumentListTable({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
-              {selectable && <th className="w-8 px-2 py-2" />}
+              {selectable && (
+                <th className="w-8 px-2 py-2">
+                  {onSelectAll && (
+                    <input
+                      type="checkbox"
+                      checked={areAllSelected ?? false}
+                      onChange={(e) => onSelectAll(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300"
+                      aria-label="Alle sichtbaren Eintraege markieren"
+                    />
+                  )}
+                </th>
+              )}
               <th className="w-32 px-2 py-2 font-semibold">Datum / Zeit</th>
               <th className="px-2 py-2 font-semibold">Nummer</th>
               {showCompanyColumn && <th className="w-36 px-2 py-2 font-semibold">Firma</th>}

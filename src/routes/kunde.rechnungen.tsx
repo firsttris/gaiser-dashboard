@@ -4,11 +4,13 @@ import { DateRangeFilter } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
 import { PageShell } from '../components/page-shell'
+import { SelectionActionBar } from '../components/selection-action-bar'
 import { TopNav } from '../components/top-nav'
 import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
+import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/kunde/rechnungen')({ component: RechnungenPage })
 
@@ -26,6 +28,18 @@ function RechnungenPage() {
     dateRange, setDateRange,
     allGroups, filteredGroups,
   } = useDocumentGroupFilters(companyRecords, 'invoiceId', invoiceStatusFilterOf)
+
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(allGroups)
+
+  const areAllVisibleSelected = filteredGroups.length > 0 && filteredGroups.every((g) => selectedIds.has(g.id))
+
+  function exportSelectedAsCsv() {
+    if (selectedGroups.length === 0) return
+    const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), false)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const company = selectedCompany?.shortCode?.toLowerCase() ?? 'kunde'
+    downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
+  }
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
@@ -99,6 +113,20 @@ function RechnungenPage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
+        <SelectionActionBar
+          count={selectedIds.size}
+          noun="Rechnung"
+          pluralSuffix="en"
+          total={selectedTotal}
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+          ]}
+        />
+
         {filteredGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Rechnungen fuer die aktuellen Filter vorhanden.
@@ -109,6 +137,10 @@ function RechnungenPage() {
             getBadge={invoiceBadge}
             getExtraBadges={reverseChargeExtraBadges}
             renderDateien={renderDateien}
+            selectedIds={selectedIds}
+            onSelectionChange={toggleSelection}
+            areAllSelected={areAllVisibleSelected}
+            onSelectAll={(checked) => (checked ? selectAllVisible(filteredGroups) : deselectVisible(filteredGroups))}
           />
         )}
       </section>

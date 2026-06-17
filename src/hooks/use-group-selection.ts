@@ -24,9 +24,25 @@ export function useGroupSelection<G extends DocGroup>(allGroups: G[]) {
     })
   }
 
+  function selectAllVisible(groups: DocGroup[]) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      groups.forEach((g) => next.add(g.id))
+      return next
+    })
+  }
+
+  function deselectVisible(groups: DocGroup[]) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      groups.forEach((g) => next.delete(g.id))
+      return next
+    })
+  }
+
   function clearSelection() {
     setSelectedIds(new Set())
   }
 
-  return { selectedIds, selectedGroups, selectedTotal, toggleSelection, clearSelection }
+  return { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection }
 }

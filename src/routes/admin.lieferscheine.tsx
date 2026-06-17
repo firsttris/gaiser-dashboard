@@ -10,7 +10,7 @@ import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { deliveryNoteBadge, deliveryNoteStatusFilterOf, money, reverseChargeExtraBadges } from '../utils/history-utils'
+import { createHistoryCsv, deliveryNoteBadge, deliveryNoteStatusFilterOf, downloadCsvFile, money, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/admin/lieferscheine')({ component: AdminLieferscheinePage })
 
@@ -33,7 +33,7 @@ function AdminLieferscheinePage() {
     allGroups, filteredGroups,
   } = useDocumentGroupFilters(records, 'deliveryNoteId', deliveryNoteStatusFilterOf, { withCompanyFilter: true })
 
-  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, clearSelection } = useGroupSelection(allGroups)
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(allGroups)
 
   const selectedCompanies = useMemo(
     () => new Set(selectedGroups.map((g) => g.items[0].company)),
@@ -44,15 +44,21 @@ function AdminLieferscheinePage() {
     [selectedGroups],
   )
 
+  function isSelectableGroup(items: RecordItem[]) {
+    return deliveryNoteBadge(items).label !== 'Storniert'
+  }
+
+  const selectableFilteredGroups = useMemo(
+    () => filteredGroups.filter((g) => isSelectableGroup(g.items)),
+    [filteredGroups],
+  )
+  const areAllVisibleSelected = selectableFilteredGroups.length > 0 && selectableFilteredGroups.every((g) => selectedIds.has(g.id))
+
   function cancelDeliveryNoteGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
     downloadStornoDoc(items, items[0].company, cancelId, items[0].deliveryNoteId)
     assignCancel(items.map((r) => r.id), cancelId)
     items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
-  function isSelectableGroup(items: RecordItem[]) {
-    return deliveryNoteBadge(items).label !== 'Storniert'
   }
 
   function stornoSelection() {
@@ -68,6 +74,13 @@ function AdminLieferscheinePage() {
     invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
     clearSelection()
+  }
+
+  function exportSelectedAsCsv() {
+    if (selectedGroups.length === 0) return
+    const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), true)
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsvFile(`admin-lieferscheine-${stamp}.csv`, csv)
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -156,6 +169,10 @@ function AdminLieferscheinePage() {
           onClear={clearSelection}
           actions={[
             {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+            {
               label: 'Stornieren',
               onClick: () => setPendingAction({
                 action: stornoSelection,
@@ -164,7 +181,7 @@ function AdminLieferscheinePage() {
               }),
             },
             {
-              label: 'Sammelrechnung erstellen',
+              label: 'Rechnung erstellen',
               variant: 'primary',
               disabled: selectedCompanies.size !== 1 || !selectedAllOpen,
               onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
@@ -187,6 +204,8 @@ function AdminLieferscheinePage() {
             selectedIds={selectedIds}
             onSelectionChange={toggleSelection}
             isSelectable={isSelectableGroup}
+            areAllSelected={areAllVisibleSelected}
+            onSelectAll={(checked) => (checked ? selectAllVisible(selectableFilteredGroups) : deselectVisible(selectableFilteredGroups))}
           />
         )}
       </article>
@@ -200,7 +219,7 @@ function AdminLieferscheinePage() {
             className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-semibold text-slate-900">Sammelrechnung erstellen</h3>
+            <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
             <p className="mt-2 text-sm text-slate-600">
               {selectedGroups.length} Lieferschein{selectedGroups.length !== 1 ? 'e' : ''} fuer {selectedGroups[0]?.items[0].company} · {money(selectedTotal)}
             </p>
@@ -234,7 +253,7 @@ function AdminLieferscheinePage() {
                 }}
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
               >
-                Sammelrechnung erstellen
+                Rechnung erstellen
               </button>
             </div>
           </div>
