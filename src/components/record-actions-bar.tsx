@@ -3,8 +3,6 @@ interface Props {
   canCreateDeliveryNote: boolean
   selectedHaveDeliveryNote: boolean
   multipleCompaniesSelected?: boolean
-  onSelectAll: () => void
-  onClearSelection: () => void
   onCreateDeliveryNote: () => void
   onExportCsv: () => void
 }
@@ -14,8 +12,6 @@ export function RecordActionsBar({
   canCreateDeliveryNote,
   selectedHaveDeliveryNote,
   multipleCompaniesSelected = false,
-  onSelectAll,
-  onClearSelection,
   onCreateDeliveryNote,
   onExportCsv,
 }: Props) {
@@ -24,20 +20,6 @@ export function RecordActionsBar({
   return (
     <>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onSelectAll}
-          className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-        >
-          Alle sichtbaren markieren
-        </button>
-        <button
-          type="button"
-          onClick={onClearSelection}
-          className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-        >
-          Auswahl leeren
-        </button>
         <button
           type="button"
           onClick={onCreateDeliveryNote}

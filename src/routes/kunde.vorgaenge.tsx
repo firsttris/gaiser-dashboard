@@ -45,7 +45,6 @@ function HistoryPage() {
     toggleRecordSelection,
     selectAllVisible,
     deselectVisible,
-    clearSelection,
   } = useRecordSelection(filteredRecords)
 
   const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
@@ -165,8 +164,6 @@ function HistoryPage() {
           selectedCount={selectedCount}
           canCreateDeliveryNote={canCreateDeliveryNote}
           selectedHaveDeliveryNote={selectedHaveDeliveryNote}
-          onSelectAll={selectAllVisible}
-          onClearSelection={clearSelection}
           onCreateDeliveryNote={createCombinedDeliveryNote}
           onExportCsv={exportSelectedAsCsv}
         />

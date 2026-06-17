@@ -46,7 +46,6 @@ function AdminVorgaengePage() {
     toggleRecordSelection,
     selectAllVisible,
     deselectVisible,
-    clearSelection,
   } = useRecordSelection(filteredRecords)
 
   const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
@@ -105,8 +104,6 @@ function AdminVorgaengePage() {
           canCreateDeliveryNote={canCreateCompanyDocuments}
           selectedHaveDeliveryNote={selectedHaveDeliveryNote}
           multipleCompaniesSelected={selectedCompanies.length > 1}
-          onSelectAll={selectAllVisible}
-          onClearSelection={clearSelection}
           onCreateDeliveryNote={createDeliveryNotes}
           onExportCsv={exportSelectedAsCsv}
         />
