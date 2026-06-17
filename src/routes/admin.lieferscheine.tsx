@@ -2,33 +2,21 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
-import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
+import { DateRangeFilter } from '../components/date-range-filter'
+import { DocLinkButton } from '../components/doc-link-button'
+import { DocumentListTable } from '../components/document-list-table'
+import { SelectionActionBar } from '../components/selection-action-bar'
+import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
+import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId, money, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { shortDocId } from '../components/history-table'
+import { deliveryNoteBadge, deliveryNoteStatusFilterOf, money, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/admin/lieferscheine')({ component: AdminLieferscheinePage })
-
-type StatusFilter = 'all' | 'offen' | 'berechnet' | 'storniert'
-
-function getBadge(items: RecordItem[]): BadgeConfig {
-  const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
-  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
-  if (statuses.has('rechnung')) return statusBadge('rechnung')
-  return statusBadge('lieferschein')
-}
 
 function AdminLieferscheinePage() {
   const { companies, records, updateRecordStatus, assignInvoice, assignCancel } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
-  const [companyFilter, setCompanyFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [searchText, setSearchText] = useState('')
-  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
 
@@ -37,22 +25,24 @@ function AdminLieferscheinePage() {
     [companies],
   )
 
-  const allGroups = useMemo(() => groupAllByDocId(records, 'deliveryNoteId'), [records])
+  const {
+    companyFilter, setCompanyFilter,
+    statusFilter, setStatusFilter,
+    searchText, setSearchText,
+    dateRange, setDateRange,
+    allGroups, filteredGroups,
+  } = useDocumentGroupFilters(records, 'deliveryNoteId', deliveryNoteStatusFilterOf, { withCompanyFilter: true })
 
-  const filteredGroups = useMemo(() => {
-    const query = searchText.trim().toLocaleLowerCase('de-DE')
-    return allGroups.filter((g) => {
-      if (companyFilter !== 'all' && g.items[0].company !== companyFilter) return false
-      if (statusFilter !== 'all') {
-        const badge = getBadge(g.items)
-        const groupStatus: StatusFilter = badge.label === 'Storniert' ? 'storniert' : (badge.label === 'Rechnung' || badge.label === 'Bezahlt') ? 'berechnet' : 'offen'
-        if (groupStatus !== statusFilter) return false
-      }
-      if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
-      if (!matchesDateRange(g.items[0].createdAt, dateRange)) return false
-      return true
-    })
-  }, [allGroups, companyFilter, statusFilter, searchText, dateRange])
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, clearSelection } = useGroupSelection(allGroups)
+
+  const selectedCompanies = useMemo(
+    () => new Set(selectedGroups.map((g) => g.items[0].company)),
+    [selectedGroups],
+  )
+  const selectedAllOpen = useMemo(
+    () => selectedGroups.length > 0 && selectedGroups.every((g) => deliveryNoteBadge(g.items).label === 'Lieferschein'),
+    [selectedGroups],
+  )
 
   function cancelDeliveryNoteGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
@@ -62,38 +52,12 @@ function AdminLieferscheinePage() {
   }
 
   function isSelectableGroup(items: RecordItem[]) {
-    return getBadge(items).label !== 'Storniert'
-  }
-
-  const selectedGroups = useMemo(
-    () => allGroups.filter((g) => selectedIds.has(g.id)),
-    [allGroups, selectedIds],
-  )
-  const selectedCompanies = useMemo(
-    () => new Set(selectedGroups.map((g) => g.items[0].company)),
-    [selectedGroups],
-  )
-  const selectedTotal = useMemo(
-    () => selectedGroups.reduce((sum, g) => sum + g.items.reduce((s, r) => s + r.total, 0), 0),
-    [selectedGroups],
-  )
-  const selectedAllOpen = useMemo(
-    () => selectedGroups.length > 0 && selectedGroups.every((g) => getBadge(g.items).label === 'Lieferschein'),
-    [selectedGroups],
-  )
-
-  function toggleSelection(id: string, checked: boolean) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (checked) next.add(id)
-      else next.delete(id)
-      return next
-    })
+    return deliveryNoteBadge(items).label !== 'Storniert'
   }
 
   function stornoSelection() {
     selectedGroups.forEach((g) => cancelDeliveryNoteGroup(g.items))
-    setSelectedIds(new Set())
+    clearSelection()
   }
 
   function createSammelrechnung(isReverseCharge: boolean) {
@@ -103,7 +67,7 @@ function AdminLieferscheinePage() {
     const invoiceNo = downloadInvoicePdf(invoiceItems, shortCode, deliveryNoteRefs, undefined, isReverseCharge)
     invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
-    setSelectedIds(new Set())
+    clearSelection()
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -111,33 +75,19 @@ function AdminLieferscheinePage() {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     return (
       <>
-        <button
-          type="button"
-          onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
-          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
-        >
-          {shortDocId(id)}
-        </button>
+        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)} />
         {invoiceId && (
-          <button
-            type="button"
+          <DocLinkButton
+            id={invoiceId}
+            color="blue"
             onClick={() => {
               const group = items.filter((r) => r.invoiceId === invoiceId)
               downloadInvoicePdf(group, items[0].company, id, invoiceId, items[0].invoiceReverseCharge)
             }}
-            className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
-          >
-            {shortDocId(invoiceId)}
-          </button>
+          />
         )}
         {cancelId && (
-          <button
-            type="button"
-            onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
-            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
-          >
-            {shortDocId(cancelId)}
-          </button>
+          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)} />
         )}
       </>
     )
@@ -175,7 +125,7 @@ function AdminLieferscheinePage() {
             Status
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
@@ -197,48 +147,30 @@ function AdminLieferscheinePage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
-        {selectedIds.size > 0 && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 p-3">
-            <div className="text-sm text-emerald-800">
-              <span className="font-semibold">{selectedIds.size} Lieferschein{selectedIds.size !== 1 ? 'e' : ''}</span> ausgewaehlt
-              {' · '}
-              <span className="font-semibold">{money(selectedTotal)}</span>
-              {selectedCompanies.size > 1 && (
-                <span className="ml-2 font-semibold text-amber-700">
-                  Achtung: Lieferscheine gehoeren zu {selectedCompanies.size} verschiedenen Firmen.
-                </span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Auswahl aufheben
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingAction({
-                  action: stornoSelection,
-                  title: 'Lieferscheine stornieren',
-                  message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Lieferschein${selectedGroups.length !== 1 ? 'e' : ''} stornieren möchten?`,
-                })}
-                className="rounded-xl bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-300"
-              >
-                Stornieren
-              </button>
-              <button
-                type="button"
-                disabled={selectedCompanies.size !== 1 || !selectedAllOpen}
-                onClick={() => { setSammelReverseCharge(false); setSammelrechnungOpen(true) }}
-                className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
-              >
-                Sammelrechnung erstellen
-              </button>
-            </div>
-          </div>
-        )}
+        <SelectionActionBar
+          count={selectedIds.size}
+          noun="Lieferschein"
+          pluralSuffix="e"
+          total={selectedTotal}
+          warning={selectedCompanies.size > 1 ? `Achtung: Lieferscheine gehoeren zu ${selectedCompanies.size} verschiedenen Firmen.` : undefined}
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'Stornieren',
+              onClick: () => setPendingAction({
+                action: stornoSelection,
+                title: 'Lieferscheine stornieren',
+                message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Lieferschein${selectedGroups.length !== 1 ? 'e' : ''} stornieren möchten?`,
+              }),
+            },
+            {
+              label: 'Sammelrechnung erstellen',
+              variant: 'primary',
+              disabled: selectedCompanies.size !== 1 || !selectedAllOpen,
+              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
+            },
+          ]}
+        />
 
         {filteredGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -249,8 +181,8 @@ function AdminLieferscheinePage() {
             groups={filteredGroups}
             showCompanyColumn
             showTotalColumn={false}
-            getBadge={getBadge}
-            getExtraBadges={(items) => items[0].invoiceReverseCharge ? [{ label: '§13b UStG', className: 'bg-purple-100 text-purple-700' }] : []}
+            getBadge={deliveryNoteBadge}
+            getExtraBadges={reverseChargeExtraBadges}
             renderDateien={renderDateien}
             selectedIds={selectedIds}
             onSelectionChange={toggleSelection}

@@ -1,54 +1,41 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { ConfirmDialog } from '../components/confirm-dialog'
-import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
+import { DateRangeFilter } from '../components/date-range-filter'
+import { DocLinkButton } from '../components/doc-link-button'
+import { DocumentListTable } from '../components/document-list-table'
+import { SelectionActionBar } from '../components/selection-action-bar'
+import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
+import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId, money, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { shortDocId } from '../components/history-table'
+import { invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/admin/rechnungen')({ component: AdminRechnungenPage })
-
-type StatusFilter = 'all' | 'offen' | 'bezahlt' | 'storniert'
-
-function getBadge(items: RecordItem[]): BadgeConfig {
-  const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
-  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
-  return statusBadge('rechnung')
-}
 
 function AdminRechnungenPage() {
   const { companies, records, updateRecordStatus, assignCancel } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
-  const [companyFilter, setCompanyFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [searchText, setSearchText] = useState('')
-  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
     [companies],
   )
 
-  const allGroups = useMemo(() => groupAllByDocId(records, 'invoiceId'), [records])
+  const {
+    companyFilter, setCompanyFilter,
+    statusFilter, setStatusFilter,
+    searchText, setSearchText,
+    dateRange, setDateRange,
+    allGroups, filteredGroups,
+  } = useDocumentGroupFilters(records, 'invoiceId', invoiceStatusFilterOf, { withCompanyFilter: true })
 
-  const filteredGroups = useMemo(() => {
-    const query = searchText.trim().toLocaleLowerCase('de-DE')
-    return allGroups.filter((g) => {
-      if (companyFilter !== 'all' && g.items[0].company !== companyFilter) return false
-      if (statusFilter !== 'all') {
-        const badge = getBadge(g.items)
-        const groupStatus: StatusFilter = badge.label === 'Bezahlt' ? 'bezahlt' : badge.label === 'Storniert' ? 'storniert' : 'offen'
-        if (groupStatus !== statusFilter) return false
-      }
-      if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
-      if (!matchesDateRange(g.items[0].createdAt, dateRange)) return false
-      return true
-    })
-  }, [allGroups, companyFilter, statusFilter, searchText, dateRange])
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, clearSelection } = useGroupSelection(allGroups)
+
+  const selectedAllOpen = useMemo(
+    () => selectedGroups.length > 0 && selectedGroups.every((g) => invoiceBadge(g.items).label === 'Rechnung'),
+    [selectedGroups],
+  )
 
   function cancelGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
@@ -59,39 +46,17 @@ function AdminRechnungenPage() {
   }
 
   function isSelectableGroup(items: RecordItem[]) {
-    return getBadge(items).label !== 'Storniert'
-  }
-
-  const selectedGroups = useMemo(
-    () => allGroups.filter((g) => selectedIds.has(g.id)),
-    [allGroups, selectedIds],
-  )
-  const selectedTotal = useMemo(
-    () => selectedGroups.reduce((sum, g) => sum + g.items.reduce((s, r) => s + r.total, 0), 0),
-    [selectedGroups],
-  )
-  const selectedAllOpen = useMemo(
-    () => selectedGroups.length > 0 && selectedGroups.every((g) => getBadge(g.items).label === 'Rechnung'),
-    [selectedGroups],
-  )
-
-  function toggleSelection(id: string, checked: boolean) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (checked) next.add(id)
-      else next.delete(id)
-      return next
-    })
+    return invoiceBadge(items).label !== 'Storniert'
   }
 
   function stornoSelection() {
     selectedGroups.forEach((g) => cancelGroup(g.items))
-    setSelectedIds(new Set())
+    clearSelection()
   }
 
   function bezahltSelection() {
     selectedGroups.forEach((g) => g.items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')))
-    setSelectedIds(new Set())
+    clearSelection()
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -100,33 +65,23 @@ function AdminRechnungenPage() {
     const deliveryNoteId = items[0].deliveryNoteId
     return (
       <>
-        <button
-          type="button"
+        <DocLinkButton
+          id={id}
+          color="blue"
           onClick={() => downloadInvoicePdf(items, shortCode, deliveryNoteId, id, items[0].invoiceReverseCharge)}
-          className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
-        >
-          {shortDocId(id)}
-        </button>
+        />
         {deliveryNoteId && (
-          <button
-            type="button"
+          <DocLinkButton
+            id={deliveryNoteId}
+            color="amber"
             onClick={() => {
               const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
               downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId)
             }}
-            className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
-          >
-            {shortDocId(deliveryNoteId)}
-          </button>
+          />
         )}
         {cancelId && (
-          <button
-            type="button"
-            onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)}
-            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
-          >
-            {shortDocId(cancelId)}
-          </button>
+          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)} />
         )}
       </>
     )
@@ -164,7 +119,7 @@ function AdminRechnungenPage() {
             Status
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
@@ -186,47 +141,33 @@ function AdminRechnungenPage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
-        {selectedIds.size > 0 && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 p-3">
-            <div className="text-sm text-emerald-800">
-              <span className="font-semibold">{selectedIds.size} Rechnung{selectedIds.size !== 1 ? 'en' : ''}</span> ausgewaehlt
-              {' · '}
-              <span className="font-semibold">{money(selectedTotal)}</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Auswahl aufheben
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingAction({
-                  action: stornoSelection,
-                  title: 'Rechnungen stornieren',
-                  message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Rechnung${selectedGroups.length !== 1 ? 'en' : ''} stornieren möchten?`,
-                })}
-                className="rounded-xl bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-300"
-              >
-                Stornieren
-              </button>
-              <button
-                type="button"
-                disabled={!selectedAllOpen}
-                onClick={() => setPendingAction({
-                  action: bezahltSelection,
-                  title: 'Als bezahlt markieren',
-                  message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Rechnung${selectedGroups.length !== 1 ? 'en' : ''} als bezahlt markieren möchten?`,
-                })}
-                className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
-              >
-                Als bezahlt markieren
-              </button>
-            </div>
-          </div>
-        )}
+        <SelectionActionBar
+          count={selectedIds.size}
+          noun="Rechnung"
+          pluralSuffix="en"
+          total={selectedTotal}
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'Stornieren',
+              onClick: () => setPendingAction({
+                action: stornoSelection,
+                title: 'Rechnungen stornieren',
+                message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Rechnung${selectedGroups.length !== 1 ? 'en' : ''} stornieren möchten?`,
+              }),
+            },
+            {
+              label: 'Als bezahlt markieren',
+              variant: 'primary',
+              disabled: !selectedAllOpen,
+              onClick: () => setPendingAction({
+                action: bezahltSelection,
+                title: 'Als bezahlt markieren',
+                message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Rechnung${selectedGroups.length !== 1 ? 'en' : ''} als bezahlt markieren möchten?`,
+              }),
+            },
+          ]}
+        />
 
         {filteredGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -236,8 +177,8 @@ function AdminRechnungenPage() {
           <DocumentListTable
             groups={filteredGroups}
             showCompanyColumn
-            getBadge={getBadge}
-            getExtraBadges={(items) => items[0].invoiceReverseCharge ? [{ label: '§13b UStG', className: 'bg-purple-100 text-purple-700' }] : []}
+            getBadge={invoiceBadge}
+            getExtraBadges={reverseChargeExtraBadges}
             renderDateien={renderDateien}
             selectedIds={selectedIds}
             onSelectionChange={toggleSelection}

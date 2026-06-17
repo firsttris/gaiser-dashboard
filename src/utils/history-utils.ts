@@ -73,6 +73,43 @@ export function statusBadge(status: RecordStatus | string) {
   return STATUS_BADGE[status] ?? { label: statusLabel(status), className: 'bg-slate-100 text-slate-600' }
 }
 
+export function deliveryNoteBadge(items: RecordItem[]) {
+  const statuses = new Set(items.map((r) => r.status))
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  if (statuses.has('rechnung')) return statusBadge('rechnung')
+  return statusBadge('lieferschein')
+}
+
+export function invoiceBadge(items: RecordItem[]) {
+  const statuses = new Set(items.map((r) => r.status))
+  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
+  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
+  return statusBadge('rechnung')
+}
+
+export type DeliveryNoteStatusFilter = 'all' | 'offen' | 'berechnet' | 'storniert'
+
+export function deliveryNoteStatusFilterOf(items: RecordItem[]): DeliveryNoteStatusFilter {
+  const badge = deliveryNoteBadge(items)
+  if (badge.label === 'Storniert') return 'storniert'
+  if (badge.label === 'Rechnung' || badge.label === 'Bezahlt') return 'berechnet'
+  return 'offen'
+}
+
+export type InvoiceStatusFilter = 'all' | 'offen' | 'bezahlt' | 'storniert'
+
+export function invoiceStatusFilterOf(items: RecordItem[]): InvoiceStatusFilter {
+  const badge = invoiceBadge(items)
+  if (badge.label === 'Bezahlt') return 'bezahlt'
+  if (badge.label === 'Storniert') return 'storniert'
+  return 'offen'
+}
+
+export function reverseChargeExtraBadges(items: RecordItem[]) {
+  return items[0].invoiceReverseCharge ? [{ label: '§13b UStG', className: 'bg-purple-100 text-purple-700' }] : []
+}
+
 export function csvCell(value: string | number) {
   const text = String(value).replace(/"/g, '""')
   return `"${text}"`

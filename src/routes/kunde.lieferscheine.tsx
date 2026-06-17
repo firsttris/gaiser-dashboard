@@ -1,78 +1,49 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { DocumentListTable, type BadgeConfig } from '../components/document-list-table'
+import { useMemo } from 'react'
+import { DateRangeFilter } from '../components/date-range-filter'
+import { DocLinkButton } from '../components/doc-link-button'
+import { DocumentListTable } from '../components/document-list-table'
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
+import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { groupAllByDocId, statusBadge } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { shortDocId } from '../components/history-table'
+import { deliveryNoteBadge, deliveryNoteStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/kunde/lieferscheine')({ component: LieferscheinePage })
 
-function getBadge(items: RecordItem[]): BadgeConfig {
-  const statuses = new Set(items.map((r) => r.status))
-  if (statuses.size === 1 && statuses.has('storniert')) return statusBadge('storniert')
-  if (statuses.has('bezahlt')) return statusBadge('bezahlt')
-  if (statuses.has('rechnung')) return statusBadge('rechnung')
-  return statusBadge('lieferschein')
-}
-
 function LieferscheinePage() {
   const { isLoggedIn, records, selectedCompany } = useAppState()
-  const [statusFilter, setStatusFilter] = useState<'all' | 'offen' | 'berechnet' | 'storniert'>('all')
-  const [searchText, setSearchText] = useState('')
-  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
 
-  const companyRecords = records.filter((r) => r.company === selectedCompany?.name)
-  const allGroups = useMemo(() => groupAllByDocId(companyRecords, 'deliveryNoteId'), [companyRecords])
+  const companyRecords = useMemo(
+    () => records.filter((r) => r.company === selectedCompany?.name),
+    [records, selectedCompany],
+  )
 
-  const filteredGroups = useMemo(() => {
-    const query = searchText.trim().toLocaleLowerCase('de-DE')
-    return allGroups.filter((g) => {
-      if (statusFilter !== 'all') {
-        const badge = getBadge(g.items)
-        const groupStatus = badge.label === 'Storniert' ? 'storniert' : (badge.label === 'Rechnung' || badge.label === 'Bezahlt') ? 'berechnet' : 'offen'
-        if (groupStatus !== statusFilter) return false
-      }
-      if (query && !g.id.toLocaleLowerCase('de-DE').includes(query)) return false
-      if (!matchesDateRange(g.items[0].createdAt, dateRange)) return false
-      return true
-    })
-  }, [allGroups, statusFilter, searchText, dateRange])
+  const {
+    statusFilter, setStatusFilter,
+    searchText, setSearchText,
+    dateRange, setDateRange,
+    allGroups, filteredGroups,
+  } = useDocumentGroupFilters(companyRecords, 'deliveryNoteId', deliveryNoteStatusFilterOf)
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     return (
       <>
-        <button
-          type="button"
-          onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
-          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
-        >
-          {shortDocId(id)}
-        </button>
+        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)} />
         {items[0].invoiceId && (
-          <button
-            type="button"
+          <DocLinkButton
+            id={items[0].invoiceId}
+            color="blue"
             onClick={() => {
               const group = companyRecords.filter((r) => r.invoiceId === items[0].invoiceId)
               downloadInvoicePdf(group, selectedCompany?.shortCode, id, items[0].invoiceId, items[0].invoiceReverseCharge)
             }}
-            className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
-          >
-            {shortDocId(items[0].invoiceId)}
-          </button>
+          />
         )}
         {cancelId && (
-          <button
-            type="button"
-            onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)}
-            className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
-          >
-            {shortDocId(cancelId)}
-          </button>
+          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />
         )}
       </>
     )
@@ -142,8 +113,8 @@ function LieferscheinePage() {
           <DocumentListTable
             groups={filteredGroups}
             showTotalColumn={false}
-            getBadge={getBadge}
-            getExtraBadges={(items) => items[0].invoiceReverseCharge ? [{ label: '§13b UStG', className: 'bg-purple-100 text-purple-700' }] : []}
+            getBadge={deliveryNoteBadge}
+            getExtraBadges={reverseChargeExtraBadges}
             renderDateien={renderDateien}
           />
         )}
