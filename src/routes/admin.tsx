@@ -43,7 +43,7 @@ function AdminPage() {
               </p>
               <h1 className="font-title mt-3 text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
               <p className="mt-3 text-slate-600">
-                Geschuetzter Bereich fuer Produktpflege und Firmenanlage.
+                Geschuetzter Bereich fuer Produktpflege und Kundenanlage.
               </p>
               <p className="mt-4 text-sm text-slate-500">Initiales Passwort fuer Demo: admin</p>
             </div>
@@ -157,12 +157,12 @@ function AdminPage() {
               </NavLink>
 
               <NavLink
-                to="/admin/firmen"
+                to="/admin/kunden"
                 compact
                 onClick={() => setIsMenuOpen(false)}
                 icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
               >
-                Firmen
+                Kunden
               </NavLink>
 
               <NavLink
@@ -217,10 +217,10 @@ function AdminPage() {
               Material
             </NavLink>
             <NavLink
-              to="/admin/firmen"
+              to="/admin/kunden"
               icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
             >
-              Firmen
+              Kunden
             </NavLink>
             <NavLink
               to="/admin/baustellen"

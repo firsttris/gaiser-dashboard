@@ -21,7 +21,7 @@ import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
 import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
 import { Route as AdminMaterialRouteImport } from './routes/admin.material'
 import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
-import { Route as AdminFirmenRouteImport } from './routes/admin.firmen'
+import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
 import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
@@ -87,9 +87,9 @@ const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
   path: '/lieferscheine',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminFirmenRoute = AdminFirmenRouteImport.update({
-  id: '/firmen',
-  path: '/firmen',
+const AdminKundenRoute = AdminKundenRouteImport.update({
+  id: '/kunden',
+  path: '/kunden',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
@@ -119,7 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
-  '/admin/firmen': typeof AdminFirmenRoute
+  '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
@@ -137,7 +137,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
-  '/admin/firmen': typeof AdminFirmenRoute
+  '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
@@ -156,7 +156,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
-  '/admin/firmen': typeof AdminFirmenRoute
+  '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
@@ -177,7 +177,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/admin/baustellen'
-    | '/admin/firmen'
+    | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/material'
     | '/admin/rechnungen'
@@ -195,7 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/kunde'
     | '/admin/baustellen'
-    | '/admin/firmen'
+    | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/material'
     | '/admin/rechnungen'
@@ -213,7 +213,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/admin/baustellen'
-    | '/admin/firmen'
+    | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/material'
     | '/admin/rechnungen'
@@ -320,11 +320,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLieferscheineRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/firmen': {
-      id: '/admin/firmen'
-      path: '/firmen'
-      fullPath: '/admin/firmen'
-      preLoaderRoute: typeof AdminFirmenRouteImport
+    '/admin/kunden': {
+      id: '/admin/kunden'
+      path: '/kunden'
+      fullPath: '/admin/kunden'
+      preLoaderRoute: typeof AdminKundenRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/baustellen': {
@@ -360,7 +360,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBaustellenRoute: typeof AdminBaustellenRoute
-  AdminFirmenRoute: typeof AdminFirmenRoute
+  AdminKundenRoute: typeof AdminKundenRoute
   AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminMaterialRoute: typeof AdminMaterialRoute
   AdminRechnungenRoute: typeof AdminRechnungenRoute
@@ -370,7 +370,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBaustellenRoute: AdminBaustellenRoute,
-  AdminFirmenRoute: AdminFirmenRoute,
+  AdminKundenRoute: AdminKundenRoute,
   AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminMaterialRoute: AdminMaterialRoute,
   AdminRechnungenRoute: AdminRechnungenRoute,

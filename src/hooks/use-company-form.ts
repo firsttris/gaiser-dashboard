@@ -4,6 +4,7 @@ import { type PriceCategory } from '../state/app-state'
 interface CompanyFormState {
   shortCode: string
   name: string
+  customerNumber: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -11,6 +12,7 @@ interface CompanyFormState {
 const INITIAL_STATE: CompanyFormState = {
   shortCode: '',
   name: '',
+  customerNumber: '',
   pin: '',
   priceCategory: 'business',
 }

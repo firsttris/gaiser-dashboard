@@ -8,6 +8,7 @@ export type Company = {
   id: string
   shortCode: string
   name: string
+  customerNumber: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -60,6 +61,7 @@ type CreateRecordInput = {
 type CreateCompanyInput = {
   shortCode: string
   name: string
+  customerNumber: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -76,6 +78,7 @@ type UpdateCompanyInput = {
   id: string
   shortCode: string
   name: string
+  customerNumber: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -141,10 +144,10 @@ type AppState = {
 }
 
 const companiesSeed: Company[] = [
-  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', pin: '1234', priceCategory: 'business' },
-  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', pin: '2468', priceCategory: 'business' },
-  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', pin: '7777', priceCategory: 'business' },
-  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', pin: '2222', priceCategory: 'business' },
+  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', customerNumber: '', pin: '1234', priceCategory: 'business' },
+  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', customerNumber: '', pin: '2468', priceCategory: 'business' },
+  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', customerNumber: '', pin: '7777', priceCategory: 'business' },
+  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', customerNumber: '', pin: '2222', priceCategory: 'business' },
 ]
 
 const productsSeed: Product[] = [
@@ -173,7 +176,7 @@ const constructionSitesSeed: ConstructionSite[] = [
   { id: 'baustelle-hafenallee', name: 'Hafenallee 8, Potsdam' },
 ]
 
-type LegacyCompany = Omit<Company, 'priceCategory'> & { priceCategory?: PriceCategory }
+type LegacyCompany = Omit<Company, 'priceCategory' | 'customerNumber'> & { priceCategory?: PriceCategory; customerNumber?: string }
 type LegacyProduct = Omit<
   Product,
   'pickupPrivatePrice' | 'pickupBusinessPrice' | 'dropoffPrivatePrice' | 'dropoffBusinessPrice'
@@ -190,6 +193,7 @@ function normalizeCompanies(raw: LegacyCompany[]): Company[] {
   return raw.map((company) => ({
     ...company,
     priceCategory: company.priceCategory ?? 'business',
+    customerNumber: company.customerNumber ?? '',
   }))
 }
 
@@ -519,13 +523,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         setRecords((prev) => [nextRecord, ...prev])
       },
-      createCompany: ({ shortCode, name, pin, priceCategory }: CreateCompanyInput) => {
+      createCompany: ({ shortCode, name, customerNumber, pin, priceCategory }: CreateCompanyInput) => {
         const cleanedShortCode = shortCode.trim().toUpperCase()
         const cleanedName = name.trim()
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
         if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Firmenname und Kuerzel ausfuellen.' }
+          return { ok: false, message: 'Bitte Kundenname und Kuerzel ausfuellen.' }
         }
 
         if (cleanedPin.length !== 4) {
@@ -534,13 +538,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         const hasShortCode = companies.some((company) => company.shortCode === cleanedShortCode)
         if (hasShortCode) {
-          return { ok: false, message: 'Das Firmenkuerzel ist bereits vergeben.' }
+          return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' }
         }
 
         const company: Company = {
           id: `${cleanedShortCode.toLowerCase()}-${Date.now()}`,
           shortCode: cleanedShortCode,
           name: cleanedName,
+          customerNumber: customerNumber.trim(),
           pin: cleanedPin,
           priceCategory,
         }
@@ -548,10 +553,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCompanies((prev) => [...prev, company])
         return { ok: true }
       },
-      updateCompany: ({ id, shortCode, name, pin, priceCategory }: UpdateCompanyInput) => {
+      updateCompany: ({ id, shortCode, name, customerNumber, pin, priceCategory }: UpdateCompanyInput) => {
         const company = companies.find((item) => item.id === id)
         if (!company) {
-          return { ok: false, message: 'Die Firma wurde nicht gefunden.' }
+          return { ok: false, message: 'Der Kunde wurde nicht gefunden.' }
         }
 
         const cleanedShortCode = shortCode.trim().toUpperCase()
@@ -559,7 +564,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
         if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Firmenname und Kuerzel ausfuellen.' }
+          return { ok: false, message: 'Bitte Kundenname und Kuerzel ausfuellen.' }
         }
 
         if (cleanedPin.length !== 4) {
@@ -570,13 +575,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           (item) => item.id !== id && item.shortCode.toUpperCase() === cleanedShortCode,
         )
         if (hasShortCode) {
-          return { ok: false, message: 'Das Firmenkuerzel ist bereits vergeben.' }
+          return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' }
         }
 
         const updatedCompany: Company = {
           id,
           shortCode: cleanedShortCode,
           name: cleanedName,
+          customerNumber: customerNumber.trim(),
           pin: cleanedPin,
           priceCategory,
         }
