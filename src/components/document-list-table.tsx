@@ -9,11 +9,12 @@ interface Props {
   groups: DocumentGroup[]
   showCompanyColumn?: boolean
   getBadge: (items: RecordItem[]) => BadgeConfig
+  getExtraBadges?: (items: RecordItem[]) => BadgeConfig[]
   renderDateien: (id: string, items: RecordItem[]) => ReactNode
   renderActions?: (id: string, items: RecordItem[]) => ReactNode
 }
 
-export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderDateien, renderActions }: Props) {
+export function DocumentListTable({ groups, showCompanyColumn, getBadge, getExtraBadges, renderDateien, renderActions }: Props) {
   return (
     <>
       <div className="mt-4 space-y-3 md:hidden">
@@ -30,9 +31,16 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderD
                     <p className="mt-1 text-sm font-semibold text-slate-900">{items[0].company}</p>
                   )}
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
-                  {badge.label}
-                </span>
+                <div className="flex shrink-0 flex-wrap gap-1">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
+                    {badge.label}
+                  </span>
+                  {getExtraBadges?.(items).map((b) => (
+                    <span key={b.label} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.className}`}>
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div>
@@ -87,9 +95,16 @@ export function DocumentListTable({ groups, showCompanyColumn, getBadge, renderD
                     {money(total)}
                   </td>
                   <td className="px-2 py-2.5">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
-                      {badge.label}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                      {getExtraBadges?.(items).map((b) => (
+                        <span key={b.label} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.className}`}>
+                          {b.label}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-2 py-2.5">
                     <div className="flex flex-wrap gap-1.5">
