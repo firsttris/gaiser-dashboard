@@ -180,7 +180,7 @@ export function HistoryTable({
               <th className="w-28 px-2 py-2">Zeit</th>
               <th className="w-20 px-2 py-2">Typ</th>
               {showCompanyColumn && <th className="hidden w-28 px-2 py-2 lg:table-cell">Firma</th>}
-              <th className="px-2 py-2">Produkt</th>
+              <th className="w-40 px-2 py-2">Produkt</th>
               <th className="w-16 px-2 py-2">Menge</th>
               <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Baustelle</th>
               {onStatusChange ? (
