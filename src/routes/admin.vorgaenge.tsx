@@ -13,7 +13,7 @@ export const Route = createFileRoute('/admin/vorgaenge')({ component: AdminVorga
 function AdminVorgaengePage() {
   const { companies, records, updateRecordStatus, assignDeliveryNote } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
@@ -142,12 +142,13 @@ function AdminVorgaengePage() {
             Typ
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pickup' | 'dropoff')}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Typen</option>
               <option value="dropoff">Annahme</option>
               <option value="pickup">Verkauf</option>
+              <option value="lkw">LKW</option>
             </select>
           </label>
 

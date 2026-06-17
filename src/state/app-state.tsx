@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type FlowType = 'pickup' | 'dropoff'
+export type RecordType = FlowType | 'lkw'
 export type RecordStatus = 'offen' | 'lieferschein' | 'rechnung' | 'bezahlt' | 'storniert'
 export type PriceCategory = 'private' | 'business'
 
@@ -24,6 +25,13 @@ export type Product = {
   dropoffBusinessPrice: number
 }
 
+export type Truck = {
+  id: number
+  name: string
+  privatePrice: number
+  businessPrice: number
+}
+
 export type ConstructionSite = {
   id: string
   name: string
@@ -34,7 +42,7 @@ export type RecordItem = {
   company: string
   constructionSiteId: string
   constructionSiteName: string
-  type: FlowType
+  type: RecordType
   productName: string
   amount: number
   unit: string
@@ -55,6 +63,13 @@ type CreateRecordInput = {
   type: FlowType
   product: Product
   amount: number
+  constructionSiteName: string
+  company?: Company
+}
+
+type CreateTruckRecordInput = {
+  truck: Truck
+  hours: number
   constructionSiteName: string
   company?: Company
 }
@@ -101,6 +116,23 @@ type DeleteProductInput = {
   id: number
 }
 
+type CreateTruckInput = {
+  name: string
+  privatePrice: string
+  businessPrice: string
+}
+
+type UpdateTruckInput = {
+  id: number
+  name: string
+  privatePrice: string
+  businessPrice: string
+}
+
+type DeleteTruckInput = {
+  id: number
+}
+
 type CreateConstructionSiteInput = {
   name: string
 }
@@ -121,6 +153,7 @@ type AppState = {
   isLoggedIn: boolean
   isAdminLoggedIn: boolean
   products: Product[]
+  trucks: Truck[]
   constructionSites: ConstructionSite[]
   records: RecordItem[]
   login: (companyId: string, pin: string) => LoginResult
@@ -129,12 +162,16 @@ type AppState = {
   adminLogout: () => void
   clearCache: () => void
   createRecord: (input: CreateRecordInput) => void
+  createTruckRecord: (input: CreateTruckRecordInput) => void
   createCompany: (input: CreateCompanyInput) => CreateCompanyResult
   updateCompany: (input: UpdateCompanyInput) => CreateCompanyResult
   deleteCompany: (input: DeleteCompanyInput) => CreateCompanyResult
   createProduct: (input: CreateProductInput) => CreateCompanyResult
   updateProduct: (input: UpdateProductInput) => CreateCompanyResult
   deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
+  createTruck: (input: CreateTruckInput) => CreateCompanyResult
+  updateTruck: (input: UpdateTruckInput) => CreateCompanyResult
+  deleteTruck: (input: DeleteTruckInput) => CreateCompanyResult
   createConstructionSite: (input: CreateConstructionSiteInput) => CreateCompanyResult
   updateConstructionSite: (input: UpdateConstructionSiteInput) => CreateCompanyResult
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => CreateCompanyResult
@@ -170,6 +207,10 @@ const productsSeed: Product[] = [
   { id: 15, name: 'Mineralgemisch 0/16',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 24,   pickupBusinessPrice: 16.7, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
   { id: 16, name: 'Mineralgemisch 0/32',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 22,   pickupBusinessPrice: 15.1, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
   { id: 17, name: 'Splitt 2/5',                               unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 20.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+]
+
+const trucksSeed: Truck[] = [
+  { id: 1, name: 'LKW 3-Achser inkl. Maut', privatePrice: 90, businessPrice: 90 },
 ]
 
 const constructionSitesSeed: ConstructionSite[] = [
@@ -282,6 +323,20 @@ function normalizeConstructionSiteName(name: string) {
     .replace(/\s+/g, ' ')
 }
 
+function resolveConstructionSite(name: string, sites: ConstructionSite[]) {
+  const cleanedName = normalizeConstructionSiteName(name)
+  if (!cleanedName) return null
+
+  const existing = sites.find(
+    (item) => item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
+  )
+
+  return {
+    site: existing ?? ({ id: createConstructionSiteId(cleanedName), name: cleanedName } satisfies ConstructionSite),
+    isNew: !existing,
+  }
+}
+
 function createConstructionSiteId(name: string) {
   const slug = name
     .toLowerCase()
@@ -296,6 +351,7 @@ const ADMIN_PASSWORD = 'admin'
 const STORAGE_KEYS = {
   companies: 'gaiser.mock.companies.v1',
   products: 'gaiser.mock.products.v1',
+  trucks: 'gaiser.mock.trucks.v1',
   constructionSites: 'gaiser.mock.constructionSites.v1',
   records: 'gaiser.mock.records.v1',
   selectedCompanyId: 'gaiser.mock.selectedCompanyId.v1',
@@ -328,6 +384,7 @@ function loadPersistedState() {
   return {
     companies: normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
     products: normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
+    trucks: readStorage<Truck[]>(STORAGE_KEYS.trucks, trucksSeed),
     constructionSites: readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed),
     records: normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
     selectedCompanyId: readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null),
@@ -341,6 +398,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [products, setProducts] = useState<Product[]>(productsSeed)
+  const [trucks, setTrucks] = useState<Truck[]>(trucksSeed)
   const [constructionSites, setConstructionSites] = useState<ConstructionSite[]>(constructionSitesSeed)
   const [records, setRecords] = useState<RecordItem[]>([])
 
@@ -348,6 +406,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const persisted = loadPersistedState()
     setCompanies(persisted.companies)
     setProducts(persisted.products)
+    setTrucks(persisted.trucks)
     setConstructionSites(persisted.constructionSites)
     setRecords(persisted.records)
     setIsAdminLoggedIn(persisted.adminLoggedIn)
@@ -366,6 +425,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return
     writeStorage(STORAGE_KEYS.products, products)
   }, [hydrated, products])
+
+  useEffect(() => {
+    if (!hydrated) return
+    writeStorage(STORAGE_KEYS.trucks, trucks)
+  }, [hydrated, trucks])
 
   useEffect(() => {
     if (!hydrated) return
@@ -410,6 +474,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProducts(normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)))
       }
 
+      if (event.key === STORAGE_KEYS.trucks) {
+        setTrucks(readStorage<Truck[]>(STORAGE_KEYS.trucks, trucksSeed))
+      }
+
       if (event.key === STORAGE_KEYS.constructionSites) {
         setConstructionSites(readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed))
       }
@@ -443,6 +511,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isLoggedIn: selectedCompany !== null,
       isAdminLoggedIn,
       products,
+      trucks,
       constructionSites,
       records,
       login: (companyId: string, pin: string) => {
@@ -481,6 +550,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
         setCompanies(companiesSeed)
         setProducts(productsSeed)
+        setTrucks(trucksSeed)
         setConstructionSites(constructionSitesSeed)
         setRecords([])
       },
@@ -488,22 +558,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const activeCompany = company ?? selectedCompany
         if (!activeCompany) return
 
-        const cleanedConstructionSiteName = normalizeConstructionSiteName(constructionSiteName)
-        if (!cleanedConstructionSiteName) return
+        const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
+        if (!resolved) return
 
-        const existingConstructionSite = constructionSites.find(
-          (item) => item.name.toLocaleLowerCase('de-DE') === cleanedConstructionSiteName.toLocaleLowerCase('de-DE'),
-        )
-
-        const resolvedConstructionSite =
-          existingConstructionSite ??
-          ({
-            id: createConstructionSiteId(cleanedConstructionSiteName),
-            name: cleanedConstructionSiteName,
-          } satisfies ConstructionSite)
-
-        if (!existingConstructionSite) {
-          setConstructionSites((prev) => [...prev, resolvedConstructionSite])
+        if (resolved.isNew) {
+          setConstructionSites((prev) => [...prev, resolved.site])
         }
 
         const unitPrice = getUnitPrice(product, type, activeCompany.priceCategory)
@@ -511,12 +570,42 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const nextRecord: RecordItem = {
           id: Date.now(),
           company: activeCompany.name,
-          constructionSiteId: resolvedConstructionSite.id,
-          constructionSiteName: resolvedConstructionSite.name,
+          constructionSiteId: resolved.site.id,
+          constructionSiteName: resolved.site.name,
           type,
           productName: product.name,
           amount,
           unit: product.unit,
+          unitPrice,
+          total,
+          status: 'offen',
+          createdAt: new Date().toLocaleString('de-DE'),
+        }
+
+        setRecords((prev) => [nextRecord, ...prev])
+      },
+      createTruckRecord: ({ truck, hours, constructionSiteName, company }: CreateTruckRecordInput) => {
+        const activeCompany = company ?? selectedCompany
+        if (!activeCompany) return
+
+        const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
+        if (!resolved) return
+
+        if (resolved.isNew) {
+          setConstructionSites((prev) => [...prev, resolved.site])
+        }
+
+        const unitPrice = activeCompany.priceCategory === 'private' ? truck.privatePrice : truck.businessPrice
+        const total = unitPrice * hours
+        const nextRecord: RecordItem = {
+          id: Date.now(),
+          company: activeCompany.name,
+          constructionSiteId: resolved.site.id,
+          constructionSiteName: resolved.site.name,
+          type: 'lkw',
+          productName: truck.name,
+          amount: hours,
+          unit: 'Std.',
           unitPrice,
           total,
           status: 'offen',
@@ -739,6 +828,99 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProducts((prev) => prev.filter((item) => item.id !== id))
         return { ok: true }
       },
+      createTruck: ({ name, privatePrice, businessPrice }: CreateTruckInput) => {
+        const cleanedName = name.trim()
+        const parsedPrivatePrice = Number(privatePrice)
+        const parsedBusinessPrice = Number(businessPrice)
+
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' }
+        }
+
+        if (
+          Number.isNaN(parsedPrivatePrice) ||
+          Number.isNaN(parsedBusinessPrice) ||
+          parsedPrivatePrice < 0 ||
+          parsedBusinessPrice < 0
+        ) {
+          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+        }
+
+        const nextId = trucks.reduce((maxValue, truck) => Math.max(maxValue, truck.id), 0) + 1
+        const truck: Truck = {
+          id: nextId,
+          name: cleanedName,
+          privatePrice: parsedPrivatePrice,
+          businessPrice: parsedBusinessPrice,
+        }
+
+        setTrucks((prev) => [...prev, truck])
+        return { ok: true }
+      },
+      updateTruck: ({ id, name, privatePrice, businessPrice }: UpdateTruckInput) => {
+        const currentTruck = trucks.find((item) => item.id === id)
+        if (!currentTruck) {
+          return { ok: false, message: 'Der LKW wurde nicht gefunden.' }
+        }
+
+        const cleanedName = name.trim()
+        const parsedPrivatePrice = Number(privatePrice)
+        const parsedBusinessPrice = Number(businessPrice)
+
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' }
+        }
+
+        if (
+          Number.isNaN(parsedPrivatePrice) ||
+          Number.isNaN(parsedBusinessPrice) ||
+          parsedPrivatePrice < 0 ||
+          parsedBusinessPrice < 0
+        ) {
+          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+        }
+
+        const updatedTruck: Truck = {
+          id,
+          name: cleanedName,
+          privatePrice: parsedPrivatePrice,
+          businessPrice: parsedBusinessPrice,
+        }
+
+        setTrucks((prev) => prev.map((item) => (item.id === id ? updatedTruck : item)))
+
+        if (currentTruck.name !== cleanedName) {
+          setRecords((prev) =>
+            prev.map((record) => {
+              if (record.type !== 'lkw' || record.productName !== currentTruck.name) return record
+              return { ...record, productName: cleanedName }
+            }),
+          )
+        }
+
+        return { ok: true }
+      },
+      deleteTruck: ({ id }: DeleteTruckInput) => {
+        const currentTruck = trucks.find((item) => item.id === id)
+        if (!currentTruck) {
+          return { ok: false, message: 'Der LKW wurde nicht gefunden.' }
+        }
+
+        const hasHistory = records.some((record) => record.type === 'lkw' && record.productName === currentTruck.name)
+        if (hasHistory) {
+          return {
+            ok: false,
+            message: 'LKW kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+          }
+        }
+
+        if (trucks.length <= 1) {
+          return { ok: false, message: 'Mindestens ein LKW muss vorhanden sein.' }
+        }
+
+        setTrucks((prev) => prev.filter((item) => item.id !== id))
+        return { ok: true }
+      },
       createConstructionSite: ({ name }: CreateConstructionSiteInput) => {
         const cleanedName = normalizeConstructionSiteName(name)
         if (!cleanedName) {
@@ -848,7 +1030,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         )
       },
     }),
-    [hydrated, companies, isAdminLoggedIn, products, constructionSites, records, selectedCompany],
+    [hydrated, companies, isAdminLoggedIn, products, trucks, constructionSites, records, selectedCompany],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

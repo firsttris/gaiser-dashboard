@@ -1,4 +1,4 @@
-import type { FlowType, RecordItem, RecordStatus } from '../state/app-state'
+import type { RecordItem, RecordStatus, RecordType } from '../state/app-state'
 
 export function groupByDocId(
   records: RecordItem[],
@@ -45,7 +45,8 @@ export function money(value: number) {
   }).format(value)
 }
 
-export function flowLabel(type: FlowType) {
+export function flowLabel(type: RecordType) {
+  if (type === 'lkw') return 'LKW'
   return type === 'pickup' ? 'Verkauf' : 'Annahme'
 }
 

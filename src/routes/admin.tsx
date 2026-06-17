@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
+import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, ShieldCheck, Truck, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
@@ -166,6 +166,15 @@ function AdminPage() {
               </NavLink>
 
               <NavLink
+                to="/admin/lkw"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<Clock className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                LKW
+              </NavLink>
+
+              <NavLink
                 to="/admin/kunden"
                 compact
                 onClick={() => setIsMenuOpen(false)}
@@ -230,6 +239,12 @@ function AdminPage() {
               icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
             >
               Material
+            </NavLink>
+            <NavLink
+              to="/admin/lkw"
+              icon={<Clock className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              LKW
             </NavLink>
             <NavLink
               to="/admin/kunden"

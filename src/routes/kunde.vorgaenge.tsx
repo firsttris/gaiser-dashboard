@@ -14,7 +14,7 @@ export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPag
 
 function HistoryPage() {
   const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote } = useAppState()
-  const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
@@ -129,12 +129,13 @@ function HistoryPage() {
             Typ
             <select
               value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as 'all' | 'pickup' | 'dropoff')}
+              onChange={(event) => setTypeFilter(event.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Typen</option>
               <option value="dropoff">Annahme</option>
               <option value="pickup">Verkauf</option>
+              <option value="lkw">LKW</option>
             </select>
           </label>
 
