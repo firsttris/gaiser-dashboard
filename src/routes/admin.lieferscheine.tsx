@@ -24,8 +24,6 @@ function getBadge(items: RecordItem[]): BadgeConfig {
 function AdminLieferscheinePage() {
   const { companies, records, updateRecordStatus, assignInvoice, assignCancel } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
-  const [invoiceDialog, setInvoiceDialog] = useState<{ deliveryNoteId: string; items: typeof records } | null>(null)
-  const [reverseCharge, setReverseCharge] = useState(false)
   const [companyFilter, setCompanyFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchText, setSearchText] = useState('')
@@ -63,15 +61,8 @@ function AdminLieferscheinePage() {
     items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
   }
 
-  function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceItems: typeof records, isReverseCharge: boolean) {
-    const shortCode = companies.find((c) => c.name === invoiceItems[0].company)?.shortCode
-    const invoiceNo = downloadInvoicePdf(invoiceItems, shortCode, deliveryNoteId, undefined, isReverseCharge)
-    invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
-    assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
-  }
-
   function isSelectableGroup(items: RecordItem[]) {
-    return getBadge(items).label === 'Lieferschein'
+    return getBadge(items).label !== 'Storniert'
   }
 
   const selectedGroups = useMemo(
@@ -86,6 +77,10 @@ function AdminLieferscheinePage() {
     () => selectedGroups.reduce((sum, g) => sum + g.items.reduce((s, r) => s + r.total, 0), 0),
     [selectedGroups],
   )
+  const selectedAllOpen = useMemo(
+    () => selectedGroups.length > 0 && selectedGroups.every((g) => getBadge(g.items).label === 'Lieferschein'),
+    [selectedGroups],
+  )
 
   function toggleSelection(id: string, checked: boolean) {
     setSelectedIds((prev) => {
@@ -94,6 +89,11 @@ function AdminLieferscheinePage() {
       else next.delete(id)
       return next
     })
+  }
+
+  function stornoSelection() {
+    selectedGroups.forEach((g) => cancelDeliveryNoteGroup(g.items))
+    setSelectedIds(new Set())
   }
 
   function createSammelrechnung(isReverseCharge: boolean) {
@@ -137,38 +137,6 @@ function AdminLieferscheinePage() {
             className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
           >
             {shortDocId(cancelId)}
-          </button>
-        )}
-      </>
-    )
-  }
-
-  function renderActions(id: string, items: RecordItem[]) {
-    const badge = getBadge(items)
-    const isStorniert = badge.label === 'Storniert'
-    const isOffen = badge.label === 'Lieferschein'
-    return (
-      <>
-        {!isStorniert && (
-          <button
-            type="button"
-            onClick={() => setPendingAction({
-              action: () => cancelDeliveryNoteGroup(items),
-              title: 'Lieferschein stornieren',
-              message: `Sind Sie sicher, dass Sie Lieferschein ${id} stornieren möchten?`,
-            })}
-            className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
-          >
-            Stornieren
-          </button>
-        )}
-        {isOffen && (
-          <button
-            type="button"
-            onClick={() => { setReverseCharge(false); setInvoiceDialog({ deliveryNoteId: id, items }) }}
-            className="rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white hover:bg-emerald-700"
-          >
-            RG erstellen
           </button>
         )}
       </>
@@ -251,7 +219,18 @@ function AdminLieferscheinePage() {
               </button>
               <button
                 type="button"
-                disabled={selectedCompanies.size !== 1}
+                onClick={() => setPendingAction({
+                  action: stornoSelection,
+                  title: 'Lieferscheine stornieren',
+                  message: `Sind Sie sicher, dass Sie ${selectedGroups.length} Lieferschein${selectedGroups.length !== 1 ? 'e' : ''} stornieren möchten?`,
+                })}
+                className="rounded-xl bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-300"
+              >
+                Stornieren
+              </button>
+              <button
+                type="button"
+                disabled={selectedCompanies.size !== 1 || !selectedAllOpen}
                 onClick={() => { setSammelReverseCharge(false); setSammelrechnungOpen(true) }}
                 className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
               >
@@ -271,64 +250,12 @@ function AdminLieferscheinePage() {
             showCompanyColumn
             getBadge={getBadge}
             renderDateien={renderDateien}
-            renderActions={renderActions}
             selectedIds={selectedIds}
             onSelectionChange={toggleSelection}
             isSelectable={isSelectableGroup}
           />
         )}
       </article>
-
-      {invoiceDialog && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setInvoiceDialog(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              {invoiceDialog.items.length} Position(en) für {invoiceDialog.items[0].company}
-            </p>
-            <label className="mt-4 flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={reverseCharge}
-                onChange={(e) => setReverseCharge(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
-            </label>
-            {reverseCharge && (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
-              </p>
-            )}
-            <div className="mt-5 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setInvoiceDialog(null)}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  createInvoiceForDeliveryNote(invoiceDialog.deliveryNoteId, invoiceDialog.items, reverseCharge)
-                  setInvoiceDialog(null)
-                }}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                Rechnung erstellen
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
 
       {sammelrechnungOpen && createPortal(
         <div
