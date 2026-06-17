@@ -1,50 +1,38 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable, shortDocId } from '../components/history-table'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
-import {
-  createHistoryCsv,
-  downloadCsvFile,
-  groupByDocId,
-  statusLabel,
-} from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile, statusLabel } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { PendingDocumentSection } from '../components/pending-document-section'
 import { RecordActionsBar } from '../components/record-actions-bar'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
 function AdminIndexPage() {
-  const { companies, records, updateRecordStatus, assignDeliveryNote, assignInvoice, assignCancel } = useAppState()
-  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
-  const [invoiceDialog, setInvoiceDialog] = useState<{ deliveryNoteId: string; items: typeof records } | null>(null)
-  const [reverseCharge, setReverseCharge] = useState(false)
+  const { companies, records, updateRecordStatus, assignDeliveryNote } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
 
-  const companyOptions = useMemo(() => {
-    return companies.map((company) => company.name).sort((a, b) => a.localeCompare(b, 'de'))
-  }, [companies])
+  const companyOptions = useMemo(
+    () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
+    [companies],
+  )
 
-  const statusOptions = useMemo(() => {
-    return Array.from(new Set(records.map((record) => record.status))).sort((a, b) => a.localeCompare(b, 'de'))
-  }, [records])
+  const statusOptions = useMemo(
+    () => Array.from(new Set(records.map((r) => r.status))).sort((a, b) => a.localeCompare(b, 'de')),
+    [records],
+  )
 
   const filteredRecords = useMemo(() => {
     const query = searchText.trim().toLocaleLowerCase('de-DE')
-
     return records.filter((record) => {
       if (companyFilter !== 'all' && record.company !== companyFilter) return false
       if (typeFilter !== 'all' && record.type !== typeFilter) return false
       if (statusFilter !== 'all' && record.status !== statusFilter) return false
-
       if (!query) return true
-
       const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
       return haystack.includes(query)
     })
@@ -61,158 +49,46 @@ function AdminIndexPage() {
     clearSelection,
   } = useRecordSelection(filteredRecords)
 
-  const selectedCompanies = Array.from(new Set(selectedRecords.map((record) => record.company)))
+  const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
   const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
   const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1 && !selectedHaveDeliveryNote
 
   function exportSelectedAsCsv() {
-    const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
     if (selectedRecords.length === 0) return
-
     const csv = createHistoryCsv(selectedRecords, true)
-
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
   }
 
-  const pendingDeliveryNotes = useMemo(() => groupByDocId(records, 'lieferschein', 'deliveryNoteId'), [records])
-  const pendingInvoices = useMemo(() => groupByDocId(records, 'rechnung', 'invoiceId'), [records])
-
   function createDeliveryNotes() {
-    if (selectedRecords.length === 0) return
-    if (selectedCompanies.length !== 1) return
-
+    if (selectedRecords.length === 0 || selectedCompanies.length !== 1) return
     const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
   }
 
-  function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records, isReverseCharge = false) {
-    const shortCode = companies.find((c) => c.name === invoiceRecords[0].company)?.shortCode
-    const invoiceNo = downloadInvoicePdf(invoiceRecords, shortCode, deliveryNoteId, undefined, isReverseCharge)
-    invoiceRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
-    assignInvoice(invoiceRecords.map((r) => r.id), invoiceNo, isReverseCharge)
-  }
-
-  function cancelDeliveryNoteGroup(items: typeof records) {
-    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
-  function cancelGroup(items: typeof records) {
-    const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
-    const originalDocId = items[0].invoiceId ?? items[0].deliveryNoteId
-    downloadStornoDoc(items, items[0].company, cancelId, originalDocId)
-    assignCancel(items.map((r) => r.id), cancelId)
-    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
   function handleDeliveryNoteClick(deliveryNoteId: string) {
     const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
-    if (group.length === 0) return
+    if (!group.length) return
     downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId)
   }
 
   function handleInvoiceClick(invoiceId: string) {
     const group = records.filter((r) => r.invoiceId === invoiceId)
-    if (group.length === 0) return
+    if (!group.length) return
     const shortCode = companies.find((c) => c.name === group[0].company)?.shortCode
     downloadInvoicePdf(group, shortCode, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
   }
 
   function handleCancelClick(cancelId: string) {
     const group = records.filter((r) => r.cancelId === cancelId)
-    if (group.length === 0) return
+    if (!group.length) return
     downloadStornoDoc(group, group[0].company, cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
   }
 
   return (
     <section className="space-y-5">
-      {pendingInvoices.length > 0 && (
-        <PendingDocumentSection
-          title="Offene Rechnungen"
-          subtitle="Rechnungen, die noch nicht als bezahlt markiert wurden."
-          groups={pendingInvoices}
-          variant="blue"
-          showCompany
-          renderActions={(id, items) => (
-            <>
-              <button
-                type="button"
-                onClick={() => setPendingAction({
-                  action: () => cancelGroup(items),
-                  title: 'Rechnung stornieren',
-                  message: `Sind Sie sicher, dass Sie diese Rechnung (${items.length} Eintrag/Einträge) stornieren möchten?`,
-                })}
-                className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
-              >
-                Stornieren
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
-                  downloadInvoicePdf(items, shortCode, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)
-                }}
-                className="rounded-xl bg-blue-500 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600"
-              >
-                Rechnung herunterladen
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingAction({
-                  action: () => items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')),
-                  title: 'Als bezahlt markieren',
-                  message: `Sind Sie sicher, dass Sie diese Rechnung (${items.length} Eintrag/Einträge) als bezahlt markieren möchten?`,
-                })}
-                className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-              >
-                Als bezahlt markieren
-              </button>
-            </>
-          )}
-        />
-      )}
-
-      {pendingDeliveryNotes.length > 0 && (
-        <PendingDocumentSection
-          title="Offene Lieferscheine"
-          subtitle="Lieferscheine, fuer die noch keine Rechnung erstellt wurde."
-          groups={pendingDeliveryNotes}
-          variant="amber"
-          showCompany
-          renderActions={(id, items) => (
-            <>
-              <button
-                type="button"
-                onClick={() => setPendingAction({
-                  action: () => cancelDeliveryNoteGroup(items),
-                  title: 'Lieferschein stornieren',
-                  message: `Sind Sie sicher, dass Sie diesen Lieferschein (${items.length} Eintrag/Einträge) stornieren möchten?`,
-                })}
-                className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
-              >
-                Stornieren
-              </button>
-              <button
-                type="button"
-                onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
-                className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
-              >
-                Lieferschein herunterladen
-              </button>
-              <button
-                type="button"
-                onClick={() => { setReverseCharge(false); setInvoiceDialog({ deliveryNoteId: id, items }) }}
-                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-              >
-                Rechnung erstellen
-              </button>
-            </>
-          )}
-        />
-      )}
-
       <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -240,14 +116,12 @@ function AdminIndexPage() {
             Firma
             <select
               value={companyFilter}
-              onChange={(event) => setCompanyFilter(event.target.value)}
+              onChange={(e) => setCompanyFilter(e.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Firmen</option>
-              {companyOptions.map((company) => (
-                <option key={company} value={company}>
-                  {company}
-                </option>
+              {companyOptions.map((name) => (
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </label>
@@ -256,7 +130,7 @@ function AdminIndexPage() {
             Typ
             <select
               value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as 'all' | 'pickup' | 'dropoff')}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pickup' | 'dropoff')}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Typen</option>
@@ -269,14 +143,12 @@ function AdminIndexPage() {
             Status
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'all' | RecordStatus)}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | RecordStatus)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {statusLabel(status)}
-                </option>
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>{statusLabel(s)}</option>
               ))}
             </select>
           </label>
@@ -285,7 +157,7 @@ function AdminIndexPage() {
             Suche
             <input
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(e) => setSearchText(e.target.value)}
               placeholder="Baustelle, LS-/RG-/ST-Nummer"
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
@@ -310,64 +182,6 @@ function AdminIndexPage() {
           />
         )}
       </article>
-      {invoiceDialog && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setInvoiceDialog(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              {invoiceDialog.items.length} Position(en) für {invoiceDialog.items[0].company}
-            </p>
-            <label className="mt-4 flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={reverseCharge}
-                onChange={(e) => setReverseCharge(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
-            </label>
-            {reverseCharge && (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
-              </p>
-            )}
-            <div className="mt-5 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setInvoiceDialog(null)}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  createInvoiceForDeliveryNote(invoiceDialog.deliveryNoteId, invoiceDialog.items, reverseCharge)
-                  setInvoiceDialog(null)
-                }}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                Rechnung erstellen
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      <ConfirmDialog
-        open={pendingAction !== null}
-        title={pendingAction?.title ?? ''}
-        message={pendingAction?.message ?? ''}
-        confirmLabel="Ja"
-        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
-        onCancel={() => setPendingAction(null)}
-      />
     </section>
   )
 }
