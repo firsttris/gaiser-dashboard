@@ -66,11 +66,11 @@ function AdminLieferscheinePage() {
     clearSelection()
   }
 
-  function createSammelrechnung(isReverseCharge: boolean) {
+  async function createSammelrechnung(isReverseCharge: boolean) {
     const invoiceItems = selectedGroups.flatMap((g) => g.items)
     const deliveryNoteRefs = selectedGroups.map((g) => g.id).join(', ')
-    const shortCode = companies.find((c) => c.name === invoiceItems[0].company)?.shortCode
-    const invoiceNo = downloadInvoicePdf(invoiceItems, shortCode, deliveryNoteRefs, undefined, isReverseCharge)
+    const customerNumber = companies.find((c) => c.name === invoiceItems[0].company)?.customerNumber
+    const invoiceNo = await downloadInvoicePdf(invoiceItems, customerNumber, deliveryNoteRefs, undefined, isReverseCharge)
     invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
     clearSelection()
@@ -86,6 +86,7 @@ function AdminLieferscheinePage() {
   function renderDateien(id: string, items: RecordItem[]) {
     const invoiceId = items.find((r) => r.invoiceId)?.invoiceId
     const cancelId = items.find((r) => r.cancelId)?.cancelId
+    const customerNumber = companies.find((c) => c.name === items[0].company)?.customerNumber
     return (
       <>
         <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)} />
@@ -95,7 +96,7 @@ function AdminLieferscheinePage() {
             color="blue"
             onClick={() => {
               const group = items.filter((r) => r.invoiceId === invoiceId)
-              downloadInvoicePdf(group, items[0].company, id, invoiceId, items[0].invoiceReverseCharge)
+              downloadInvoicePdf(group, customerNumber, id, invoiceId, items[0].invoiceReverseCharge)
             }}
           />
         )}

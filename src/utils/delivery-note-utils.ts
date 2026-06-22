@@ -2,176 +2,315 @@ import { jsPDF } from 'jspdf'
 import { type RecordItem } from '../state/app-state'
 import { flowLabel, money } from './history-utils'
 
-export function downloadInvoicePdf(
+const LOGO_URL = `${import.meta.env.BASE_URL}assets/Logo.jpeg`
+const LOGO_ASPECT_RATIO = 303 / 873
+
+const COMPANY_INFO = {
+  name: 'Gaiser GmbH Erdbau und Abbruch',
+  street: 'Hansjakobweg 14',
+  city: '77830 Bühlertal',
+  phone: '+49 170 2416906',
+  email: 'info@gaiser-abbruch.de',
+  taxOffice: 'Finanzamt Baden-Baden',
+  vatId: 'DE338636212',
+  banks: [
+    { name: 'Sparkasse Bühl', bic: 'SOLADES1BHL', iban: 'DE44 6625 1434 0000 5249 91' },
+    { name: 'Volksbank Bühl', bic: 'GENODE61BHL', iban: 'DE96 6629 1400 0005 2942 23' },
+  ],
+  management: 'Geschäftsführer: Rolf Gaiser, Marius Schmidt | Reg.-Nr. HRB 738556 | Amtsgericht Mannheim',
+}
+
+let logoDataUrlPromise: Promise<string> | null = null
+
+function loadLogoDataUrl(): Promise<string> {
+  if (!logoDataUrlPromise) {
+    logoDataUrlPromise = fetch(LOGO_URL)
+      .then((res) => res.blob())
+      .then(
+        (blob) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          }),
+      )
+  }
+  return logoDataUrlPromise
+}
+
+function formatQty(value: number) {
+  return value.toLocaleString('de-DE', { maximumFractionDigits: 2 })
+}
+
+function drawInvoiceFooter(pdf: jsPDF) {
+  const left = 15
+  const right = 195
+  const col2 = left + 60
+  const col3 = left + 110
+  const y = 266
+
+  pdf.setDrawColor(200)
+  pdf.line(left, y, right, y)
+
+  let fy = y + 5
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(7.5)
+  pdf.text(COMPANY_INFO.name, left, fy)
+  pdf.text(COMPANY_INFO.taxOffice, col2, fy)
+  pdf.text('Bankverbindungen:', col3, fy)
+
+  fy += 4
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(COMPANY_INFO.street, left, fy)
+  pdf.text(`Umsatzsteuer-ID: ${COMPANY_INFO.vatId}`, col2, fy)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text(COMPANY_INFO.banks[0].name, col3, fy)
+
+  fy += 4
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(COMPANY_INFO.city, left, fy)
+  pdf.text(`SWIFT-BIC: ${COMPANY_INFO.banks[0].bic} | IBAN: ${COMPANY_INFO.banks[0].iban}`, col3, fy)
+
+  fy += 4
+  pdf.text(`Tel: ${COMPANY_INFO.phone}`, left, fy)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text(`${COMPANY_INFO.banks[1].name}:`, col3, fy)
+
+  fy += 4
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(COMPANY_INFO.email, left, fy)
+  pdf.text(`SWIFT-BIC: ${COMPANY_INFO.banks[1].bic} | IBAN: ${COMPANY_INFO.banks[1].iban}`, col3, fy)
+
+  fy += 5
+  pdf.setFontSize(7)
+  pdf.setTextColor(100)
+  pdf.text(COMPANY_INFO.management, (left + right) / 2, fy, { align: 'center' })
+  pdf.setTextColor(0)
+}
+
+export async function downloadInvoicePdf(
   invoiceRecords: RecordItem[],
-  companyShortCode: string | undefined,
+  customerNumber: string | undefined,
   deliveryNoteId?: string,
   existingInvoiceNo?: string,
   reverseCharge = false,
-): string {
+): Promise<string> {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-  const left = 12
-  const right = 198
-  let y = 16
+  const left = 15
+  const right = 195
 
   const invoiceNo = existingInvoiceNo ?? `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
   const customerName = invoiceRecords[0].company
+  const invoiceDate = new Date().toLocaleDateString('de-DE')
 
-  pdf.setDrawColor(220)
-  pdf.setFillColor(248, 250, 252)
-  pdf.roundedRect(left, y, 186, 26, 2, 2, 'FD')
+  const logoDataUrl = await loadLogoDataUrl()
+  const logoWidth = 50
+  const logoHeight = logoWidth * LOGO_ASPECT_RATIO
+  const logoCenterX = right - logoWidth / 2
+  pdf.addImage(logoDataUrl, 'JPEG', right - logoWidth, 12, logoWidth, logoHeight)
 
+  let y = 12 + logoHeight + 4
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(9)
+  pdf.text(COMPANY_INFO.street, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(COMPANY_INFO.city, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(`Tel: ${COMPANY_INFO.phone}`, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(COMPANY_INFO.email, logoCenterX, y, { align: 'center' })
+  const addressBottom = y
+
+  y = 38
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(7)
+  pdf.setTextColor(120)
+  pdf.text(`${COMPANY_INFO.name} | ${COMPANY_INFO.street} | ${COMPANY_INFO.city}`, left, y)
+  pdf.setTextColor(0)
+
+  y += 7
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(11)
+  pdf.text(customerName, left, y)
+
+  const metaLabelX = 122
+  const metaRows: Array<[string, string]> = [
+    ['Rechnungs-Nr.:', invoiceNo],
+    ['Datum:', invoiceDate],
+  ]
+  if (customerNumber) metaRows.push(['Kunden-Nr.:', customerNumber])
+  metaRows.push(['Seite:', '1 von 1'])
+
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(9)
+  const metaValueX = metaLabelX + Math.max(...metaRows.map(([label]) => pdf.getTextWidth(label))) + 3
+
+  let metaY = addressBottom + 8
+  let seiteY = metaY
+  for (const [label, value] of metaRows) {
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(label, metaLabelX, metaY)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(value, metaValueX, metaY)
+    if (label === 'Seite:') seiteY = metaY
+    metaY += 5
+  }
+
+  y = Math.max(metaY, y) + 8
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(20)
-  pdf.text('RECHNUNG', left + 4, y + 9)
-  pdf.setFontSize(11)
-  pdf.text('Gaiser Baustoffe', left + 4, y + 16)
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text('Musterstrasse 1, 10115 Berlin', left + 4, y + 21)
+  pdf.text(reverseCharge ? 'Rechnung §13b' : 'Rechnung', left, y)
 
+  y += 9
+  const siteNames = new Set(invoiceRecords.map((r) => r.constructionSiteName || '-'))
+  const bauvorhaben = siteNames.size === 1 ? [...siteNames][0] : 'Diverse Baustellen'
+  const zeitraum = `${invoiceRecords[invoiceRecords.length - 1].createdAt} - ${invoiceRecords[0].createdAt}`
+
+  const detailLabels = ['Bauvorhaben:', 'Ausführungszeitraum:', ...(deliveryNoteId ? ['Lieferschein-Nr.:'] : [])]
+  pdf.setFontSize(9.5)
   pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(10)
-  pdf.text(`Nr.: ${invoiceNo}`, right - 4, y + 10, { align: 'right' })
+  const detailValueX = left + Math.max(...detailLabels.map((label) => pdf.getTextWidth(label))) + 3
+
+  pdf.text('Bauvorhaben:', left, y)
   pdf.setFont('helvetica', 'normal')
-  pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, right - 4, y + 16, { align: 'right' })
-  pdf.text(`Positionen: ${invoiceRecords.length}`, right - 4, y + 21, { align: 'right' })
-
-  y += 36
-
-  pdf.setDrawColor(225)
-  pdf.roundedRect(left, y, 120, 24, 2, 2)
-
+  pdf.text(bauvorhaben, detailValueX, y)
+  y += 5
   pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(9)
-  pdf.text('Rechnungsadresse', left + 3, y + 6)
-
+  pdf.text('Ausführungszeitraum:', left, y)
   pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text(customerName, left + 3, y + 11)
-  if (companyShortCode) {
-    pdf.text(`Kuerzel: ${companyShortCode}`, left + 3, y + 16)
-  }
-  pdf.text('z. Hd. Buchhaltung', left + 3, y + 21)
+  pdf.text(zeitraum, detailValueX, y)
 
-  y += 40
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
   if (deliveryNoteId) {
-    pdf.text(`Bezug: Lieferschein-Nr. ${deliveryNoteId}`, left, y)
     y += 5
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Lieferschein-Nr.:', left, y)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(deliveryNoteId, detailValueX, y)
   }
-  pdf.text(
-    `Leistungszeitraum: ${invoiceRecords[0].createdAt} bis ${invoiceRecords[invoiceRecords.length - 1].createdAt}`,
-    left,
-    y,
-  )
 
-  y += 10
+  y += 9
+  pdf.setFontSize(9.5)
+  pdf.setFont('helvetica', 'normal')
+  pdf.text('Wir bedanken uns für die gute Zusammenarbeit und stellen Ihnen folgende Leistungen in Rechnung:', left, y)
+
+  y += 8
+
+  const cols = {
+    pos: left,
+    bezeichnung: left + 10,
+    anzahl: 120,
+    einheit: 126,
+    einzelpreis: 155,
+    gesamtpreis: right,
+  }
+
   pdf.setFont('helvetica', 'bold')
-  pdf.setFillColor(241, 245, 249)
-  pdf.rect(left, y - 4.5, 186, 7.5, 'F')
-  pdf.text('Pos.', left, y)
-  pdf.text('Datum', 24, y)
-  pdf.text('Leistung', 56, y)
-  pdf.text('Menge', 132, y)
-  pdf.text('EP', 158, y)
-  pdf.text('Betrag', right, y, { align: 'right' })
+  pdf.setFontSize(9)
+  pdf.text('Pos.', cols.pos, y)
+  pdf.text('Bezeichnung', cols.bezeichnung, y)
+  pdf.text('Anzahl', cols.anzahl, y, { align: 'right' })
+  pdf.text('Einheit', cols.einheit, y)
+  pdf.text('Einzelpreis', cols.einzelpreis, y, { align: 'right' })
+  pdf.text('Gesamtpreis', cols.gesamtpreis, y, { align: 'right' })
 
-  y += 3
-  pdf.setDrawColor(190)
+  y += 2.5
+  pdf.setDrawColor(180)
   pdf.line(left, y, right, y)
   y += 7
 
   let subtotal = 0
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
 
   for (const [index, record] of invoiceRecords.entries()) {
     subtotal += record.total
 
-    if (y > 270) {
+    if (y > 245) {
       pdf.addPage()
       y = 20
     }
 
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
+    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const serviceShort = service.length > 44 ? `${service.slice(0, 41)}...` : service
 
-    const createdAt = record.createdAt.slice(0, 10)
-    const service = `${flowLabel(record.type)}: ${record.productName} (${record.constructionSiteName || '-'})`
-    const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
+    pdf.text(`${index + 1}.`, cols.pos, y)
+    pdf.text(serviceShort, cols.bezeichnung, y)
+    pdf.text(formatQty(record.amount), cols.anzahl, y, { align: 'right' })
+    pdf.text(record.unit, cols.einheit, y)
+    pdf.text(money(record.unitPrice), cols.einzelpreis, y, { align: 'right' })
+    pdf.text(money(record.total), cols.gesamtpreis, y, { align: 'right' })
 
-    pdf.text(String(index + 1), left, y)
-    pdf.text(createdAt, 24, y)
-    pdf.text(serviceShort, 56, y)
-    pdf.text(`${record.amount} ${record.unit}`, 132, y)
-    pdf.text(money(record.unitPrice), 158, y)
-    pdf.text(money(record.total), right, y, { align: 'right' })
-
-    y += 4
-    pdf.setDrawColor(235)
-    pdf.line(left, y, right, y)
-    y += 6
+    y += 7
   }
 
-  if (y > 210) {
+  if (y > 220) {
     pdf.addPage()
+    y = 20
   }
 
-  const summaryBoxWidth = 72
-  const summaryBoxX = 126
-  const summaryTop = 236
+  y += 3
+  pdf.setDrawColor(0)
+  pdf.line(left, y, right, y)
+  y += 7
 
-  pdf.setDrawColor(220)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
 
   if (reverseCharge) {
-    pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 14, 2, 2)
-    y = summaryTop + 8
+    pdf.text('Gesamtbetrag', cols.pos, y)
+    pdf.text(money(subtotal), cols.gesamtpreis, y, { align: 'right' })
+    y += 1
+    pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
 
+    y += 10
     pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(11)
-    pdf.text('Rechnungsbetrag (netto):', summaryBoxX + 3, y)
-    pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-
-    y = summaryTop + 22
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-    pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
+    pdf.setFontSize(9.5)
+    pdf.text('Bei den oben genannten Leistungen handelt es sich um eine Bauleistung im Sinne von § 13b UStG', left, y)
     y += 5
-    pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
-    y += 8
-    pdf.setFontSize(8)
-    pdf.setTextColor(100)
-    pdf.text('Hinweis: Steuerschuldnerschaft des Leistungsempfaengers gemaess §13b UStG.', left, y)
-    y += 4
-    pdf.text('Die Umsatzsteuer ist vom Leistungsempfaenger zu entrichten.', left, y)
-    pdf.setTextColor(0)
+    pdf.text('Es liegt eine Steuerschuldnerschaft des Leistungsempfängers vor', left, y)
+    y += 9
+    pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
   } else {
     const vat = subtotal * 0.19
     const gross = subtotal + vat
 
-    pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 24, 2, 2)
-    y = summaryTop + 7
-
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(10)
-    pdf.text('Zwischensumme (netto):', summaryBoxX + 3, y)
-    pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-    y += 5
-    pdf.text('zzgl. 19% USt.:', summaryBoxX + 3, y)
-    pdf.text(money(vat), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+    pdf.text('Zwischensumme (netto)', cols.pos, y)
+    pdf.text(money(subtotal), cols.gesamtpreis, y, { align: 'right' })
     y += 6
+    pdf.text('zzgl. 19% USt.', cols.pos, y)
+    pdf.text(money(vat), cols.gesamtpreis, y, { align: 'right' })
+    y += 7
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(11)
-    pdf.text('Rechnungsbetrag:', summaryBoxX + 3, y)
-    pdf.text(money(gross), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+    pdf.text('Gesamtbetrag', cols.pos, y)
+    pdf.text(money(gross), cols.gesamtpreis, y, { align: 'right' })
+    y += 1
+    pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
 
-    y += 14
-    pdf.setFont('helvetica', 'normal')
+    y += 10
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9.5)
+    pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
+  }
+
+  const totalPages = pdf.getNumberOfPages()
+  for (let page = 1; page <= totalPages; page++) {
+    pdf.setPage(page)
+    drawInvoiceFooter(pdf)
+  }
+
+  if (totalPages > 1) {
+    pdf.setPage(1)
+    pdf.setFillColor(255, 255, 255)
+    pdf.rect(metaLabelX, seiteY - 3.5, right - metaLabelX, 5, 'F')
+    pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(9)
-    pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
-    y += 5
-    pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
+    pdf.text('Seite:', metaLabelX, seiteY)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`1 von ${totalPages}`, metaValueX, seiteY, { align: 'right' })
   }
 
   pdf.save(`rechnung-${toSafeFileDate(invoiceNo)}.pdf`)
