@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import type { RecordItem, RecordStatus } from '../state/app-state'
 import { flowLabel, money, statusBadge, statusStages } from '../utils/history-utils'
 
@@ -14,17 +13,6 @@ interface Props {
   onInvoiceClick?: (invoiceId: string) => void
   onCancelClick?: (cancelId: string) => void
 }
-
-const PALETTE = [
-  { color: '#f59e0b', bg: '#fef3c7' },
-  { color: '#3b82f6', bg: '#dbeafe' },
-  { color: '#10b981', bg: '#d1fae5' },
-  { color: '#8b5cf6', bg: '#ede9fe' },
-  { color: '#f43f5e', bg: '#ffe4e6' },
-  { color: '#06b6d4', bg: '#cffafe' },
-  { color: '#f97316', bg: '#ffedd5' },
-  { color: '#6366f1', bg: '#e0e7ff' },
-]
 
 export function shortDocId(id: string) {
   const parts = id.split('-')
@@ -44,28 +32,14 @@ export function HistoryTable({
   onInvoiceClick,
   onCancelClick,
 }: Props) {
-  const deliveryNoteColorMap = useMemo(() => {
-    const map = new Map<string, number>()
-    let index = 0
-    for (const record of records) {
-      if (record.deliveryNoteId && !map.has(record.deliveryNoteId)) {
-        map.set(record.deliveryNoteId, index % PALETTE.length)
-        index++
-      }
-    }
-    return map
-  }, [records])
-
   return (
     <>
       <div className="mt-4 space-y-3 md:hidden">
         {records.map((record) => {
-          const palette = record.deliveryNoteId != null ? PALETTE[deliveryNoteColorMap.get(record.deliveryNoteId)!] : null
           return (
             <article
               key={record.id}
               className={`rounded-xl border border-slate-200 p-4 ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}
-              style={palette ? { borderLeft: `3px solid ${palette.color}` } : undefined}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -79,12 +53,11 @@ export function HistoryTable({
                   <p className="mt-1 text-sm text-slate-700">{record.productName}</p>
                   <p className="mt-1 text-xs text-slate-600">Baustelle: {record.constructionSiteName || '-'}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {palette && (
+                    {record.deliveryNoteId && (
                       <button
                         type="button"
                         onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                        style={{ color: palette.color, backgroundColor: palette.bg }}
-                        className="cursor-pointer rounded px-1 py-0.5 font-mono text-xs hover:opacity-75"
+                        className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
                       >
                         {shortDocId(record.deliveryNoteId!)}
                       </button>
@@ -193,12 +166,10 @@ export function HistoryTable({
           </thead>
           <tbody>
             {records.map((record) => {
-              const palette = record.deliveryNoteId != null ? PALETTE[deliveryNoteColorMap.get(record.deliveryNoteId)!] : null
               return (
                 <tr
                   key={record.id}
                   className={`border-b border-slate-100 align-top ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}
-                  style={palette ? { boxShadow: `inset 3px 0 0 ${palette.color}` } : undefined}
                 >
                   <td className="px-2 pb-2 pt-2.5">
                     <input
@@ -249,12 +220,11 @@ export function HistoryTable({
                   )}
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-1">
-                      {palette && (
+                      {record.deliveryNoteId && (
                         <button
                           type="button"
                           onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                          style={{ color: palette.color, backgroundColor: palette.bg }}
-                          className="cursor-pointer rounded px-1 py-0.5 font-mono text-xs hover:opacity-75"
+                          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
                         >
                           {shortDocId(record.deliveryNoteId!)}
                         </button>
