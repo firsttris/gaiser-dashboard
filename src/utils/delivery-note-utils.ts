@@ -535,15 +535,24 @@ export async function downloadCombinedDeliveryNote(
   function drawPageHeader(isFirstPage: boolean) {
     const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
 
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(9)
-    const senderLine = `Gaiser GmbH, ${COMPANY_INFO.street}, ${COMPANY_INFO.city}`
-    pdf.text(senderLine, left, 38)
-    pdf.setLineWidth(0.2)
-    pdf.line(left, 39, left + pdf.getTextWidth(senderLine), 39)
+    let addressY = 38 + 7
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(11)
+    pdf.text(companyName, left, addressY)
+
+    if (customer?.street) {
+      addressY += 5
+      pdf.text(customer.street, left, addressY)
+    }
+
+    const customerPostalCodeAndCity = [customer?.postalCode, customer?.city].filter(Boolean).join(' ')
+    if (customerPostalCodeAndCity) {
+      addressY += 5
+      pdf.text(customerPostalCodeAndCity, left, addressY)
+    }
 
     const metaValues = [deliveryNoteId ?? '', date, customer?.customerNumber ?? '', '']
-    let metaY = addressBottom + 8
+    let metaY = Math.max(addressBottom, addressY) + 8
     let seiteY = metaY
     for (const [index, label] of metaLabels.entries()) {
       pdf.setFont('helvetica', 'bold')
