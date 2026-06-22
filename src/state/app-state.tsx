@@ -10,6 +10,9 @@ export type Company = {
   shortCode: string
   name: string
   customerNumber: string
+  street: string
+  postalCode: string
+  city: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -78,6 +81,9 @@ type CreateCompanyInput = {
   shortCode: string
   name: string
   customerNumber: string
+  street: string
+  postalCode: string
+  city: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -95,6 +101,9 @@ type UpdateCompanyInput = {
   shortCode: string
   name: string
   customerNumber: string
+  street: string
+  postalCode: string
+  city: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -182,10 +191,10 @@ type AppState = {
 }
 
 const companiesSeed: Company[] = [
-  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', customerNumber: '', pin: '1234', priceCategory: 'business' },
-  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', customerNumber: '', pin: '2468', priceCategory: 'business' },
-  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', customerNumber: '', pin: '7777', priceCategory: 'business' },
-  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', customerNumber: '', pin: '2222', priceCategory: 'business' },
+  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', customerNumber: '', street: '', postalCode: '', city: '', pin: '1234', priceCategory: 'business' },
+  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2468', priceCategory: 'business' },
+  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', customerNumber: '', street: '', postalCode: '', city: '', pin: '7777', priceCategory: 'business' },
+  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2222', priceCategory: 'business' },
 ]
 
 const productsSeed: Product[] = [
@@ -218,7 +227,13 @@ const constructionSitesSeed: ConstructionSite[] = [
   { id: 'baustelle-hafenallee', name: 'Hafenallee 8, Potsdam' },
 ]
 
-type LegacyCompany = Omit<Company, 'priceCategory' | 'customerNumber'> & { priceCategory?: PriceCategory; customerNumber?: string }
+type LegacyCompany = Omit<Company, 'priceCategory' | 'customerNumber' | 'street' | 'postalCode' | 'city'> & {
+  priceCategory?: PriceCategory
+  customerNumber?: string
+  street?: string
+  postalCode?: string
+  city?: string
+}
 type LegacyProduct = Omit<
   Product,
   'pickupPrivatePrice' | 'pickupBusinessPrice' | 'dropoffPrivatePrice' | 'dropoffBusinessPrice'
@@ -236,6 +251,9 @@ function normalizeCompanies(raw: LegacyCompany[]): Company[] {
     ...company,
     priceCategory: company.priceCategory ?? 'business',
     customerNumber: company.customerNumber ?? '',
+    street: company.street ?? '',
+    postalCode: company.postalCode ?? '',
+    city: company.city ?? '',
   }))
 }
 
@@ -614,7 +632,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         setRecords((prev) => [nextRecord, ...prev])
       },
-      createCompany: ({ shortCode, name, customerNumber, pin, priceCategory }: CreateCompanyInput) => {
+      createCompany: ({ shortCode, name, customerNumber, street, postalCode, city, pin, priceCategory }: CreateCompanyInput) => {
         const cleanedShortCode = shortCode.trim().toUpperCase()
         const cleanedName = name.trim()
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
@@ -637,6 +655,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           shortCode: cleanedShortCode,
           name: cleanedName,
           customerNumber: customerNumber.trim(),
+          street: street.trim(),
+          postalCode: postalCode.trim(),
+          city: city.trim(),
           pin: cleanedPin,
           priceCategory,
         }
@@ -644,7 +665,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCompanies((prev) => [...prev, company])
         return { ok: true }
       },
-      updateCompany: ({ id, shortCode, name, customerNumber, pin, priceCategory }: UpdateCompanyInput) => {
+      updateCompany: ({ id, shortCode, name, customerNumber, street, postalCode, city, pin, priceCategory }: UpdateCompanyInput) => {
         const company = companies.find((item) => item.id === id)
         if (!company) {
           return { ok: false, message: 'Der Kunde wurde nicht gefunden.' }
@@ -674,6 +695,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           shortCode: cleanedShortCode,
           name: cleanedName,
           customerNumber: customerNumber.trim(),
+          street: street.trim(),
+          postalCode: postalCode.trim(),
+          city: city.trim(),
           pin: cleanedPin,
           priceCategory,
         }

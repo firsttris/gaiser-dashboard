@@ -73,7 +73,7 @@ function HistoryPage() {
   function handleInvoiceClick(invoiceId: string) {
     const group = companyRecords.filter((r) => r.invoiceId === invoiceId)
     if (group.length === 0) return
-    downloadInvoicePdf(group, selectedCompany?.shortCode, group[0].deliveryNoteId, invoiceId)
+    downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
   }
 
   function handleCancelClick(cancelId: string) {

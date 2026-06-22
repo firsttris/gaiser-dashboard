@@ -74,14 +74,14 @@ function AdminRechnungenPage() {
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const customerNumber = companies.find((c) => c.name === items[0].company)?.customerNumber
+    const customer = companies.find((c) => c.name === items[0].company)
     const deliveryNoteId = items[0].deliveryNoteId
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, customerNumber, deliveryNoteId, id, items[0].invoiceReverseCharge)}
+          onClick={() => downloadInvoicePdf(items, customer, deliveryNoteId, id, items[0].invoiceReverseCharge)}
         />
         {deliveryNoteId && (
           <DocLinkButton

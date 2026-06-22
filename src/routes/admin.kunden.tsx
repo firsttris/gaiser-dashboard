@@ -19,6 +19,9 @@ function AdminKundenPage() {
       shortCode: createForm.formState.shortCode,
       name: createForm.formState.name,
       customerNumber: createForm.formState.customerNumber,
+      street: createForm.formState.street,
+      postalCode: createForm.formState.postalCode,
+      city: createForm.formState.city,
       pin: createForm.formState.pin,
       priceCategory: createForm.formState.priceCategory,
     })
@@ -46,6 +49,9 @@ function AdminKundenPage() {
       shortCode: company.shortCode,
       name: company.name,
       customerNumber: company.customerNumber,
+      street: company.street,
+      postalCode: company.postalCode,
+      city: company.city,
       pin: company.pin,
       priceCategory: company.priceCategory,
     })
@@ -57,6 +63,9 @@ function AdminKundenPage() {
       shortCode: editForm.formState.shortCode,
       name: editForm.formState.name,
       customerNumber: editForm.formState.customerNumber,
+      street: editForm.formState.street,
+      postalCode: editForm.formState.postalCode,
+      city: editForm.formState.city,
       pin: editForm.formState.pin,
       priceCategory: editForm.formState.priceCategory,
     })
@@ -140,6 +149,33 @@ function AdminKundenPage() {
           />
         </div>
 
+        <div className="md:col-span-3">
+          <CompanyInput
+            label="Strasse"
+            value={createForm.formState.street}
+            onChange={(val) => createForm.update({ street: val })}
+            placeholder="z.B. Bastian-Gugel-Strasse 11"
+          />
+        </div>
+
+        <div>
+          <CompanyInput
+            label="PLZ"
+            value={createForm.formState.postalCode}
+            onChange={(val) => createForm.update({ postalCode: val.replace(/[^0-9]/g, '').slice(0, 5) })}
+            placeholder="z.B. 77815"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <CompanyInput
+            label="Ort"
+            value={createForm.formState.city}
+            onChange={(val) => createForm.update({ city: val })}
+            placeholder="z.B. Buehl"
+          />
+        </div>
+
         <div className="md:col-span-6">
           <button
             type="submit"
@@ -192,6 +228,44 @@ function AdminKundenPage() {
               />
             ) : (
               <p className="text-sm text-slate-800">{company.customerNumber || '—'}</p>
+            )}
+
+            <p className="mt-3 text-xs text-slate-500">Strasse</p>
+            {editingCompanyId === company.id ? (
+              <input
+                value={editForm.formState.street}
+                onChange={(event) => editForm.update({ street: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                placeholder="z.B. Bastian-Gugel-Strasse 11"
+              />
+            ) : (
+              <p className="text-sm text-slate-800">{company.street || '—'}</p>
+            )}
+
+            <p className="mt-3 text-xs text-slate-500">PLZ</p>
+            {editingCompanyId === company.id ? (
+              <input
+                value={editForm.formState.postalCode}
+                onChange={(event) =>
+                  editForm.update({ postalCode: event.target.value.replace(/[^0-9]/g, '').slice(0, 5) })
+                }
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                placeholder="z.B. 77815"
+              />
+            ) : (
+              <p className="text-sm text-slate-800">{company.postalCode || '—'}</p>
+            )}
+
+            <p className="mt-3 text-xs text-slate-500">Ort</p>
+            {editingCompanyId === company.id ? (
+              <input
+                value={editForm.formState.city}
+                onChange={(event) => editForm.update({ city: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                placeholder="z.B. Buehl"
+              />
+            ) : (
+              <p className="text-sm text-slate-800">{company.city || '—'}</p>
             )}
 
             <p className="mt-3 text-xs text-slate-500">PIN</p>
@@ -270,10 +344,13 @@ function AdminKundenPage() {
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="w-20 px-3 py-2">Kuerzel</th>
-              <th className="w-[30%] px-3 py-2">Kundenname</th>
-              <th className="w-32 px-3 py-2">Kundennummer</th>
+              <th className="w-[20%] px-3 py-2">Kundenname</th>
+              <th className="w-28 px-3 py-2">Kundennummer</th>
+              <th className="w-40 px-3 py-2">Strasse</th>
+              <th className="w-20 px-3 py-2">PLZ</th>
+              <th className="w-28 px-3 py-2">Ort</th>
               <th className="w-20 px-3 py-2">PIN</th>
-              <th className="w-36 px-3 py-2">Tarifgruppe</th>
+              <th className="w-32 px-3 py-2">Tarifgruppe</th>
               <th className="w-56 px-3 py-2 text-right">Aktionen</th>
             </tr>
           </thead>
@@ -314,6 +391,41 @@ function AdminKundenPage() {
                     />
                   ) : (
                     <p className="flex h-10 items-center text-slate-600">{company.customerNumber || '—'}</p>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingCompanyId === company.id ? (
+                    <input
+                      value={editForm.formState.street}
+                      onChange={(event) => editForm.update({ street: event.target.value })}
+                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  ) : (
+                    <p className="flex h-10 items-center truncate text-slate-600">{company.street || '—'}</p>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingCompanyId === company.id ? (
+                    <input
+                      value={editForm.formState.postalCode}
+                      onChange={(event) =>
+                        editForm.update({ postalCode: event.target.value.replace(/[^0-9]/g, '').slice(0, 5) })
+                      }
+                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  ) : (
+                    <p className="flex h-10 items-center text-slate-600">{company.postalCode || '—'}</p>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingCompanyId === company.id ? (
+                    <input
+                      value={editForm.formState.city}
+                      onChange={(event) => editForm.update({ city: event.target.value })}
+                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  ) : (
+                    <p className="flex h-10 items-center truncate text-slate-600">{company.city || '—'}</p>
                   )}
                 </td>
                 <td className="px-3 py-2">

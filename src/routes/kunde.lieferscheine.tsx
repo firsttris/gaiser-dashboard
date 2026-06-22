@@ -52,7 +52,7 @@ function LieferscheinePage() {
             color="blue"
             onClick={() => {
               const group = companyRecords.filter((r) => r.invoiceId === items[0].invoiceId)
-              downloadInvoicePdf(group, selectedCompany?.shortCode, id, items[0].invoiceId, items[0].invoiceReverseCharge)
+              downloadInvoicePdf(group, selectedCompany ?? undefined, id, items[0].invoiceId, items[0].invoiceReverseCharge)
             }}
           />
         )}

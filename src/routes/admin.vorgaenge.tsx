@@ -81,8 +81,8 @@ function AdminVorgaengePage() {
   function handleInvoiceClick(invoiceId: string) {
     const group = records.filter((r) => r.invoiceId === invoiceId)
     if (!group.length) return
-    const shortCode = companies.find((c) => c.name === group[0].company)?.shortCode
-    downloadInvoicePdf(group, shortCode, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
+    const customer = companies.find((c) => c.name === group[0].company)
+    downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
   }
 
   function handleCancelClick(cancelId: string) {

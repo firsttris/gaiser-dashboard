@@ -48,7 +48,7 @@ function RechnungenPage() {
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, selectedCompany?.customerNumber, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)}
+          onClick={() => downloadInvoicePdf(items, selectedCompany ?? undefined, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)}
         />
         {cancelId && (
           <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />

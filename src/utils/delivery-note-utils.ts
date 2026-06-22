@@ -89,9 +89,16 @@ function drawInvoiceFooter(pdf: jsPDF) {
   pdf.setTextColor(0)
 }
 
+export type InvoiceCustomer = {
+  customerNumber?: string
+  street?: string
+  postalCode?: string
+  city?: string
+}
+
 export async function downloadInvoicePdf(
   invoiceRecords: RecordItem[],
-  customerNumber: string | undefined,
+  customer: InvoiceCustomer | undefined,
   deliveryNoteId?: string,
   existingInvoiceNo?: string,
   reverseCharge = false,
@@ -102,6 +109,9 @@ export async function downloadInvoicePdf(
 
   const invoiceNo = existingInvoiceNo ?? `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
   const customerName = invoiceRecords[0].company
+  const customerNumber = customer?.customerNumber
+  const customerStreet = customer?.street
+  const customerPostalCodeAndCity = [customer?.postalCode, customer?.city].filter(Boolean).join(' ')
   const invoiceDate = new Date().toLocaleDateString('de-DE')
 
   const logoDataUrl = await loadLogoDataUrl()
@@ -133,6 +143,16 @@ export async function downloadInvoicePdf(
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(11)
   pdf.text(customerName, left, y)
+
+  if (customerStreet) {
+    y += 5
+    pdf.text(customerStreet, left, y)
+  }
+
+  if (customerPostalCodeAndCity) {
+    y += 5
+    pdf.text(customerPostalCodeAndCity, left, y)
+  }
 
   const metaLabelX = 122
   const metaRows: Array<[string, string]> = [

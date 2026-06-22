@@ -5,6 +5,9 @@ interface CompanyFormState {
   shortCode: string
   name: string
   customerNumber: string
+  street: string
+  postalCode: string
+  city: string
   pin: string
   priceCategory: PriceCategory
 }
@@ -13,6 +16,9 @@ const INITIAL_STATE: CompanyFormState = {
   shortCode: '',
   name: '',
   customerNumber: '',
+  street: '',
+  postalCode: '',
+  city: '',
   pin: '',
   priceCategory: 'business',
 }
