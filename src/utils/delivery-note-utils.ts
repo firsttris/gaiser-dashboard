@@ -233,6 +233,8 @@ export async function downloadInvoicePdf(
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(9)
+  pdf.setFillColor(191, 191, 191)
+  pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
   pdf.text('Pos.', cols.pos, y)
   pdf.text('Bezeichnung', cols.bezeichnung, y)
   pdf.text('Anzahl', cols.anzahl, y, { align: 'right' })
