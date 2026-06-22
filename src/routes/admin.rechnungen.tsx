@@ -76,12 +76,13 @@ function AdminRechnungenPage() {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const customer = companies.find((c) => c.name === items[0].company)
     const deliveryNoteId = items[0].deliveryNoteId
+    const deliveryNoteRefs = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, customer, deliveryNoteId, id, items[0].invoiceReverseCharge)}
+          onClick={() => downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)}
         />
         {deliveryNoteId && (
           <DocLinkButton

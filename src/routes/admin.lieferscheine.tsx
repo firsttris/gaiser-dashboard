@@ -95,8 +95,9 @@ function AdminLieferscheinePage() {
             id={invoiceId}
             color="blue"
             onClick={() => {
-              const group = items.filter((r) => r.invoiceId === invoiceId)
-              downloadInvoicePdf(group, customer, id, invoiceId, items[0].invoiceReverseCharge)
+              const group = records.filter((r) => r.invoiceId === invoiceId)
+              const deliveryNoteRefs = [...new Set(group.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+              downloadInvoicePdf(group, customer, deliveryNoteRefs, invoiceId, items[0].invoiceReverseCharge)
             }}
           />
         )}

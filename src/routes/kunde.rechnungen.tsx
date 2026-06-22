@@ -43,12 +43,13 @@ function RechnungenPage() {
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
+    const deliveryNoteRefs = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, selectedCompany ?? undefined, items[0].deliveryNoteId, id, items[0].invoiceReverseCharge)}
+          onClick={() => downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)}
         />
         {cancelId && (
           <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />
