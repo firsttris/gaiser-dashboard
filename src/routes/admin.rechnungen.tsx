@@ -75,8 +75,8 @@ function AdminRechnungenPage() {
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const customer = companies.find((c) => c.name === items[0].company)
-    const deliveryNoteId = items[0].deliveryNoteId
-    const deliveryNoteRefs = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+    const deliveryNoteIds = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
+    const deliveryNoteRefs = deliveryNoteIds.join(', ')
     return (
       <>
         <DocLinkButton
@@ -84,8 +84,9 @@ function AdminRechnungenPage() {
           color="blue"
           onClick={() => downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)}
         />
-        {deliveryNoteId && (
+        {deliveryNoteIds.map((deliveryNoteId) => (
           <DocLinkButton
+            key={deliveryNoteId}
             id={deliveryNoteId}
             color="amber"
             onClick={() => {
@@ -93,7 +94,7 @@ function AdminRechnungenPage() {
               downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId, customer)
             }}
           />
-        )}
+        ))}
         {cancelId && (
           <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)} />
         )}
