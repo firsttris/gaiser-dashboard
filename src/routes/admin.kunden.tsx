@@ -345,7 +345,7 @@ function AdminKundenPage() {
             <tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="w-20 px-3 py-2">Kuerzel</th>
               <th className="w-[20%] px-3 py-2">Kundenname</th>
-              <th className="w-28 px-3 py-2">Kundennummer</th>
+              <th className="w-28 px-3 py-2">Kd.-Nr.</th>
               <th className="w-40 px-3 py-2">Strasse</th>
               <th className="w-20 px-3 py-2">PLZ</th>
               <th className="w-28 px-3 py-2">Ort</th>
