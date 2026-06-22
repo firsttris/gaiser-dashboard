@@ -89,7 +89,7 @@ function AdminRechnungenPage() {
             color="amber"
             onClick={() => {
               const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
-              downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId)
+              downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId, customer)
             }}
           />
         )}

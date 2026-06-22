@@ -43,7 +43,35 @@ function formatQty(value: number) {
   return value.toLocaleString('de-DE', { maximumFractionDigits: 2 })
 }
 
-function drawInvoiceFooter(pdf: jsPDF) {
+function drawLetterhead(pdf: jsPDF, left: number, right: number, logoDataUrl: string) {
+  const logoWidth = 50
+  const logoHeight = logoWidth * LOGO_ASPECT_RATIO
+  const logoCenterX = right - logoWidth / 2
+  pdf.addImage(logoDataUrl, 'JPEG', right - logoWidth, 12, logoWidth, logoHeight)
+
+  let y = 12 + logoHeight + 4
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(9)
+  pdf.text(COMPANY_INFO.street, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(COMPANY_INFO.city, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(`Tel: ${COMPANY_INFO.phone}`, logoCenterX, y, { align: 'center' })
+  y += 4.5
+  pdf.text(COMPANY_INFO.email, logoCenterX, y, { align: 'center' })
+  const addressBottom = y
+
+  y = 38
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(7)
+  pdf.setTextColor(120)
+  pdf.text(`${COMPANY_INFO.name} | ${COMPANY_INFO.street} | ${COMPANY_INFO.city}`, left, y)
+  pdf.setTextColor(0)
+
+  return addressBottom
+}
+
+function drawCompanyFooter(pdf: jsPDF) {
   const left = 15
   const right = 195
   const col2 = left + 60
@@ -115,31 +143,9 @@ export async function downloadInvoicePdf(
   const invoiceDate = new Date().toLocaleDateString('de-DE')
 
   const logoDataUrl = await loadLogoDataUrl()
-  const logoWidth = 50
-  const logoHeight = logoWidth * LOGO_ASPECT_RATIO
-  const logoCenterX = right - logoWidth / 2
-  pdf.addImage(logoDataUrl, 'JPEG', right - logoWidth, 12, logoWidth, logoHeight)
+  const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
 
-  let y = 12 + logoHeight + 4
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(9)
-  pdf.text(COMPANY_INFO.street, logoCenterX, y, { align: 'center' })
-  y += 4.5
-  pdf.text(COMPANY_INFO.city, logoCenterX, y, { align: 'center' })
-  y += 4.5
-  pdf.text(`Tel: ${COMPANY_INFO.phone}`, logoCenterX, y, { align: 'center' })
-  y += 4.5
-  pdf.text(COMPANY_INFO.email, logoCenterX, y, { align: 'center' })
-  const addressBottom = y
-
-  y = 38
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(7)
-  pdf.setTextColor(120)
-  pdf.text(`${COMPANY_INFO.name} | ${COMPANY_INFO.street} | ${COMPANY_INFO.city}`, left, y)
-  pdf.setTextColor(0)
-
-  y += 7
+  let y = 38 + 7
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(11)
   pdf.text(customerName, left, y)
@@ -319,7 +325,7 @@ export async function downloadInvoicePdf(
   const totalPages = pdf.getNumberOfPages()
   for (let page = 1; page <= totalPages; page++) {
     pdf.setPage(page)
-    drawInvoiceFooter(pdf)
+    drawCompanyFooter(pdf)
   }
 
   if (totalPages > 1) {
@@ -477,176 +483,177 @@ export function toSafeFileDate(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, '-')
 }
 
-export function appendDeliveryNotePage(
-  pdf: jsPDF,
-  record: RecordItem,
-  companyName: string,
-  newPage: boolean,
-) {
-  if (newPage) {
-    pdf.addPage()
-  }
+function drawDeliveryNoteSignatureBlock(pdf: jsPDF, left: number, right: number) {
+  const y = 244
+  pdf.setFont('helvetica', 'italic')
+  pdf.setFontSize(9.5)
+  pdf.setTextColor(0)
+  pdf.text('Ware ordnungsgemäß erhalten.', left, y)
 
-  const left = 15
-  let y = 20
+  const dashY = y + 12
+  pdf.setDrawColor(0)
+  pdf.setLineDashPattern([2, 1.5], 0)
+  pdf.line(left, dashY, right, dashY)
+  pdf.setLineDashPattern([], 0)
 
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(18)
-  pdf.text('Lieferschein', left, y)
-
-  y += 8
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(11)
-  pdf.text('Gaiser Baustoffe', left, y)
-
-  y += 6
-  pdf.setFontSize(10)
-  pdf.text(`Belegnummer: ${record.id}`, left, y)
-  y += 5
-  pdf.text(`Datum: ${record.createdAt}`, left, y)
-  y += 5
-  pdf.text(`Firma: ${companyName}`, left, y)
-  y += 5
-  pdf.text(`Vorgang: ${flowLabel(record.type)}`, left, y)
-
-  y += 10
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Position', left, y)
-  y += 6
-  pdf.setDrawColor(180)
-  pdf.line(left, y, 195, y)
-
-  y += 8
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(`Material: ${record.productName}`, left, y)
-  y += 6
-  pdf.text(`Baustelle: ${record.constructionSiteName || '-'}`, left, y)
-  y += 6
-  pdf.text(`Menge: ${record.amount} ${record.unit}`, left, y)
-  y += 6
-  pdf.text(`Einzelpreis: ${money(record.unitPrice)}`, left, y)
-  y += 6
-  pdf.setFont('helvetica', 'bold')
-  pdf.text(`Gesamt: ${money(record.total)}`, left, y)
-
-  y += 8
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(`Status: ${record.status}`, left, y)
-
-  const pageHeight = 297
-  const sigLineY = pageHeight - 22
-  const sigLabelY = pageHeight - 17
-
-  pdf.setDrawColor(180)
-  pdf.line(left, sigLineY, 95, sigLineY)
-  pdf.line(115, sigLineY, 195, sigLineY)
   pdf.setFontSize(9)
+  pdf.text('Datum', left, dashY + 5)
+  pdf.text('Unterschrift', left + 70, dashY + 5)
   pdf.setFont('helvetica', 'normal')
-  pdf.text('Ort, Datum', 55, sigLabelY, { align: 'center' })
-  pdf.text('Ware geprüft und erhalten', 155, sigLabelY, { align: 'center' })
 }
 
-export function downloadDeliveryNote(record: RecordItem, companyName: string) {
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-
-  appendDeliveryNotePage(pdf, record, companyName, false)
-
-  const fileName = `lieferschein-${record.id}-${toSafeFileDate(record.createdAt)}.pdf`
-  pdf.save(fileName)
-}
-
-export function downloadCombinedDeliveryNote(records: RecordItem[], companyName: string, deliveryNoteId?: string) {
+export async function downloadCombinedDeliveryNote(
+  records: RecordItem[],
+  companyName: string,
+  deliveryNoteId?: string,
+  customer?: InvoiceCustomer,
+) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 15
-  let y = 20
+  const right = 195
 
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(18)
-  pdf.text('Lieferschein', left, y)
+  const logoDataUrl = await loadLogoDataUrl()
+  const date = new Date().toLocaleDateString('de-DE')
+  const siteNames = new Set(records.map((r) => r.constructionSiteName || '-'))
+  const bauvorhaben = siteNames.size === 1 ? [...siteNames][0] : 'Diverse Baustellen'
 
-  y += 8
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(11)
-  pdf.text('Gaiser Baustoffe', left, y)
-
-  y += 6
-  pdf.setFontSize(10)
-  if (deliveryNoteId) {
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(`Lieferschein-Nr.: ${deliveryNoteId}`, left, y)
-    pdf.setFont('helvetica', 'normal')
-    y += 5
+  const cols = {
+    pos: left,
+    bezeichnung: left + 10,
+    anzahl: 120,
+    einheit: 126,
+    einzelpreis: 155,
+    gesamtpreis: right,
   }
-  pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, left, y)
-  y += 5
-  pdf.text(`Firma: ${companyName}`, left, y)
-  y += 5
-  pdf.text(`Positionen: ${records.length}`, left, y)
 
-  y += 10
+  const metaLabelX = 122
+  const metaLabels = ['Lieferschein-Nr.:', 'Datum:', 'Kunden-Nr.:', 'Seite:']
   pdf.setFont('helvetica', 'bold')
-  pdf.text('Positionen', left, y)
-  y += 6
-  pdf.setDrawColor(180)
-  pdf.line(left, y, 195, y)
+  pdf.setFontSize(9)
+  const metaValueX = metaLabelX + Math.max(...metaLabels.map((label) => pdf.getTextWidth(label))) + 3
 
-  y += 7
+  function drawPageHeader(isFirstPage: boolean) {
+    const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    const senderLine = `Gaiser GmbH, ${COMPANY_INFO.street}, ${COMPANY_INFO.city}`
+    pdf.text(senderLine, left, 38)
+    pdf.setLineWidth(0.2)
+    pdf.line(left, 39, left + pdf.getTextWidth(senderLine), 39)
+
+    const metaValues = [deliveryNoteId ?? '', date, customer?.customerNumber ?? '', '']
+    let metaY = addressBottom + 8
+    let seiteY = metaY
+    for (const [index, label] of metaLabels.entries()) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(9)
+      pdf.text(label, metaLabelX, metaY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(metaValues[index], metaValueX, metaY)
+      if (label === 'Seite:') seiteY = metaY
+      metaY += 5
+    }
+
+    let y = metaY + 3
+    if (isFirstPage) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(20)
+      pdf.text('Lieferschein', left, y)
+      y += 9
+      pdf.setFontSize(9.5)
+      pdf.text('Kunde:', left, y)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(companyName, left + pdf.getTextWidth('Bauvorhaben:') + 3, y)
+      y += 5
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Bauvorhaben:', left, y)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(bauvorhaben, left + pdf.getTextWidth('Bauvorhaben:') + 3, y)
+      y += 8
+    }
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.setFillColor(191, 191, 191)
+    pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
+    pdf.text('Pos.', cols.pos + 1, y)
+    pdf.text('Bezeichnung', cols.bezeichnung, y)
+    pdf.text('Anzahl', cols.anzahl, y, { align: 'right' })
+    pdf.text('Einheit', cols.einheit, y)
+    pdf.text('Einzelpreis', cols.einzelpreis, y, { align: 'right' })
+    pdf.text('Gesamtpreis', cols.gesamtpreis, y, { align: 'right' })
+    y += 7
+
+    return { tableTop: y, seiteY }
+  }
+
+  let { tableTop: y, seiteY } = drawPageHeader(true)
+  const seiteYs = [seiteY]
+
   let total = 0
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
 
   for (const [index, record] of records.entries()) {
-    if (y > 260) {
+    if (y > 235) {
       pdf.addPage()
-      y = 20
+      const header = drawPageHeader(false)
+      y = header.tableTop
+      seiteYs.push(header.seiteY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
     }
 
     total += record.total
 
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(10)
-    pdf.text(`${index + 1}. ${record.productName}`, left, y)
-    y += 5
+    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const serviceShort = service.length > 44 ? `${service.slice(0, 41)}...` : service
 
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-    pdf.text(
-      `Belegnummer: ${record.id} | Vorgang: ${flowLabel(record.type)} | Zeit: ${record.createdAt}`,
-      left,
-      y,
-    )
-    y += 5
-    pdf.text(`Baustelle: ${record.constructionSiteName || '-'}`, left, y)
-    y += 5
-    pdf.text(
-      `Menge: ${record.amount} ${record.unit} | Einzelpreis: ${money(record.unitPrice)} | Gesamt: ${money(record.total)}`,
-      left,
-      y,
-    )
-    y += 5
-    pdf.text(`Status: ${record.status}`, left, y)
-    y += 6
+    pdf.text(`${index + 1}.`, cols.pos, y)
+    pdf.text(serviceShort, cols.bezeichnung, y)
+    pdf.text(formatQty(record.amount), cols.anzahl, y, { align: 'right' })
+    pdf.text(record.unit, cols.einheit, y)
+    pdf.text(money(record.unitPrice), cols.einzelpreis, y, { align: 'right' })
+    pdf.text(money(record.total), cols.gesamtpreis, y, { align: 'right' })
 
-    pdf.setDrawColor(220)
-    pdf.line(left, y, 195, y)
-    y += 5
+    y += 7
   }
 
-  const pageHeight = 297
-  const sigLineY = pageHeight - 22
-  const sigLabelY = pageHeight - 17
+  if (y > 225) {
+    pdf.addPage()
+    const header = drawPageHeader(false)
+    y = header.tableTop
+    seiteYs.push(header.seiteY)
+  }
 
-  const totalY = sigLineY - 18
+  y += 3
+  pdf.setDrawColor(0)
+  pdf.line(left, y, right, y)
+  y += 7
 
-  pdf.setFontSize(10)
   pdf.setFont('helvetica', 'bold')
-  pdf.text(`Gesamtsumme: ${money(total)}`, left, totalY)
+  pdf.setFontSize(11)
+  pdf.text('Gesamtbetrag', cols.pos, y)
+  pdf.text(money(total), cols.gesamtpreis, y, { align: 'right' })
+  y += 1
+  pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
 
-  pdf.setDrawColor(180)
-  pdf.line(left, sigLineY, 95, sigLineY)
-  pdf.line(115, sigLineY, 195, sigLineY)
-  pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
-  pdf.text('Ort, Datum', 55, sigLabelY, { align: 'center' })
-  pdf.text('Ware geprüft und erhalten', 155, sigLabelY, { align: 'center' })
+  const totalPages = pdf.getNumberOfPages()
+  for (let page = 1; page <= totalPages; page++) {
+    pdf.setPage(page)
+    if (page === 1) drawDeliveryNoteSignatureBlock(pdf, left, right)
+    drawCompanyFooter(pdf)
+  }
+
+  for (let page = 1; page <= totalPages; page++) {
+    pdf.setPage(page)
+    pdf.setFillColor(255, 255, 255)
+    pdf.rect(metaValueX - 1, seiteYs[page - 1] - 3.5, right - metaValueX + 1, 5, 'F')
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(`${page} von ${totalPages}`, metaValueX, seiteYs[page - 1])
+  }
 
   const fileName = deliveryNoteId
     ? `lieferschein-${toSafeFileDate(deliveryNoteId)}.pdf`

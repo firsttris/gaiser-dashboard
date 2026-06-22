@@ -89,7 +89,7 @@ function AdminLieferscheinePage() {
     const customer = companies.find((c) => c.name === items[0].company)
     return (
       <>
-        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)} />
+        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id, customer)} />
         {invoiceId && (
           <DocLinkButton
             id={invoiceId}

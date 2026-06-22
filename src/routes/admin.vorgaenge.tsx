@@ -69,13 +69,15 @@ function AdminVorgaengePage() {
     const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
-    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
+    const customer = companies.find((c) => c.name === selectedCompanies[0])
+    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId, customer)
   }
 
   function handleDeliveryNoteClick(deliveryNoteId: string) {
     const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
     if (!group.length) return
-    downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId)
+    const customer = companies.find((c) => c.name === group[0].company)
+    downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
   }
 
   function handleInvoiceClick(invoiceId: string) {

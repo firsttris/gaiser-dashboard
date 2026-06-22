@@ -45,7 +45,7 @@ function LieferscheinePage() {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     return (
       <>
-        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)} />
+        <DocLinkButton id={id} color="amber" onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id, selectedCompany ?? undefined)} />
         {items[0].invoiceId && (
           <DocLinkButton
             id={items[0].invoiceId}
