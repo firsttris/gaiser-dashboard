@@ -11,7 +11,7 @@ import { RecordActionsBar } from '../components/record-actions-bar'
 export const Route = createFileRoute('/admin/vorgaenge')({ component: AdminVorgaengePage })
 
 function AdminVorgaengePage() {
-  const { companies, records, updateRecordStatus, assignDeliveryNote } = useAppState()
+  const { companies, records, updateRecordStatus, assignDeliveryNote, generateDeliveryNoteNumber } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -66,7 +66,7 @@ function AdminVorgaengePage() {
 
   function createDeliveryNotes() {
     if (selectedRecords.length === 0 || selectedCompanies.length !== 1) return
-    const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
+    const deliveryNoteId = generateDeliveryNoteNumber()
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     const customer = companies.find((c) => c.name === selectedCompanies[0])

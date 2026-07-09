@@ -13,7 +13,7 @@ import { RecordActionsBar } from '../components/record-actions-bar'
 export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPage })
 
 function HistoryPage() {
-  const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote } = useAppState()
+  const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote, generateDeliveryNoteNumber } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
@@ -58,7 +58,7 @@ function HistoryPage() {
   function createCombinedDeliveryNote() {
     if (!canCreateDeliveryNote) return
 
-    const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
+    const deliveryNoteId = generateDeliveryNoteNumber()
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId, selectedCompany ?? undefined)

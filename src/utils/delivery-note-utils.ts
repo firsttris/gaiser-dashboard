@@ -127,15 +127,14 @@ export type InvoiceCustomer = {
 export async function downloadInvoicePdf(
   invoiceRecords: RecordItem[],
   customer: InvoiceCustomer | undefined,
-  deliveryNoteId?: string,
-  existingInvoiceNo?: string,
+  deliveryNoteId: string | undefined,
+  invoiceNo: string,
   reverseCharge = false,
 ): Promise<string> {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 15
   const right = 195
 
-  const invoiceNo = existingInvoiceNo ?? `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
   const customerName = invoiceRecords[0].company
   const customerNumber = customer?.customerNumber
   const customerStreet = customer?.street

@@ -62,6 +62,16 @@ export type RecordItem = {
 type LoginResult = { ok: true } | { ok: false; message: string }
 type CreateCompanyResult = { ok: true } | { ok: false; message: string }
 
+export type NumberingSettings = {
+  invoiceTemplate: string
+  deliveryNoteTemplate: string
+  nextInvoiceNumber: number
+  nextDeliveryNoteNumber: number
+  numberPadding: number
+}
+
+type UpdateNumberingSettingsInput = Partial<NumberingSettings>
+
 type CreateRecordInput = {
   type: FlowType
   product: Product
@@ -165,6 +175,7 @@ type AppState = {
   trucks: Truck[]
   constructionSites: ConstructionSite[]
   records: RecordItem[]
+  numberingSettings: NumberingSettings
   login: (companyId: string, pin: string) => LoginResult
   logout: () => void
   adminLogin: (password: string) => LoginResult
@@ -188,6 +199,9 @@ type AppState = {
   assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
   assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
   assignCancel: (recordIds: number[], cancelId: string) => void
+  updateNumberingSettings: (input: UpdateNumberingSettingsInput) => CreateCompanyResult
+  generateInvoiceNumber: () => string
+  generateDeliveryNoteNumber: () => string
 }
 
 const companiesSeed: Company[] = [
@@ -226,6 +240,28 @@ const constructionSitesSeed: ConstructionSite[] = [
   { id: 'baustelle-nordring', name: 'Nordring 12, Berlin' },
   { id: 'baustelle-hafenallee', name: 'Hafenallee 8, Potsdam' },
 ]
+
+const numberingSettingsSeed: NumberingSettings = {
+  invoiceTemplate: 'RG-{JAHR}{MONAT}{TAG}-{NUMMER}',
+  deliveryNoteTemplate: 'LS-{JAHR}{MONAT}{TAG}-{NUMMER}',
+  nextInvoiceNumber: 1,
+  nextDeliveryNoteNumber: 1,
+  numberPadding: 4,
+}
+
+export function formatGeneratedNumber(template: string, counter: number, padding: number) {
+  const now = new Date()
+  const jahr = String(now.getFullYear())
+  const monat = String(now.getMonth() + 1).padStart(2, '0')
+  const tag = String(now.getDate()).padStart(2, '0')
+  const nummer = String(counter).padStart(Math.max(padding, 1), '0')
+
+  return template
+    .replaceAll('{JAHR}', jahr)
+    .replaceAll('{MONAT}', monat)
+    .replaceAll('{TAG}', tag)
+    .replaceAll('{NUMMER}', nummer)
+}
 
 type LegacyCompany = Omit<Company, 'priceCategory' | 'customerNumber' | 'street' | 'postalCode' | 'city'> & {
   priceCategory?: PriceCategory
@@ -374,6 +410,7 @@ const STORAGE_KEYS = {
   records: 'gaiser.mock.records.v1',
   selectedCompanyId: 'gaiser.mock.selectedCompanyId.v1',
   adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
+  numberingSettings: 'gaiser.mock.numberingSettings.v1',
 }
 
 function readStorage<T>(key: string, fallback: T): T {
@@ -407,6 +444,7 @@ function loadPersistedState() {
     records: normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
     selectedCompanyId: readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null),
     adminLoggedIn: readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false),
+    numberingSettings: readStorage<NumberingSettings>(STORAGE_KEYS.numberingSettings, numberingSettingsSeed),
   }
 }
 
@@ -419,6 +457,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [trucks, setTrucks] = useState<Truck[]>(trucksSeed)
   const [constructionSites, setConstructionSites] = useState<ConstructionSite[]>(constructionSitesSeed)
   const [records, setRecords] = useState<RecordItem[]>([])
+  const [numberingSettings, setNumberingSettings] = useState<NumberingSettings>(numberingSettingsSeed)
 
   useEffect(() => {
     const persisted = loadPersistedState()
@@ -428,6 +467,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setConstructionSites(persisted.constructionSites)
     setRecords(persisted.records)
     setIsAdminLoggedIn(persisted.adminLoggedIn)
+    setNumberingSettings(persisted.numberingSettings)
     setSelectedCompany(
       persisted.companies.find((company) => company.id === persisted.selectedCompanyId) ?? null,
     )
@@ -468,6 +508,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return
     writeStorage(STORAGE_KEYS.adminLoggedIn, isAdminLoggedIn)
   }, [hydrated, isAdminLoggedIn])
+
+  useEffect(() => {
+    if (!hydrated) return
+    writeStorage(STORAGE_KEYS.numberingSettings, numberingSettings)
+  }, [hydrated, numberingSettings])
 
   useEffect(() => {
     if (!selectedCompany) return
@@ -515,6 +560,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (event.key === STORAGE_KEYS.adminLoggedIn) {
         setIsAdminLoggedIn(readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false))
       }
+
+      if (event.key === STORAGE_KEYS.numberingSettings) {
+        setNumberingSettings(readStorage<NumberingSettings>(STORAGE_KEYS.numberingSettings, numberingSettingsSeed))
+      }
     }
 
     window.addEventListener('storage', onStorage)
@@ -532,6 +581,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       trucks,
       constructionSites,
       records,
+      numberingSettings,
       login: (companyId: string, pin: string) => {
         const company = companies.find((item) => item.id === companyId)
         if (!company) {
@@ -1053,8 +1103,37 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           }),
         )
       },
+      updateNumberingSettings: (input: UpdateNumberingSettingsInput) => {
+        if (input.invoiceTemplate !== undefined && !input.invoiceTemplate.trim()) {
+          return { ok: false, message: 'Das Rechnungsnummer-Format darf nicht leer sein.' }
+        }
+        if (input.deliveryNoteTemplate !== undefined && !input.deliveryNoteTemplate.trim()) {
+          return { ok: false, message: 'Das Lieferschein-Format darf nicht leer sein.' }
+        }
+
+        setNumberingSettings((prev) => ({ ...prev, ...input }))
+        return { ok: true }
+      },
+      generateInvoiceNumber: () => {
+        const value = formatGeneratedNumber(
+          numberingSettings.invoiceTemplate,
+          numberingSettings.nextInvoiceNumber,
+          numberingSettings.numberPadding,
+        )
+        setNumberingSettings((prev) => ({ ...prev, nextInvoiceNumber: prev.nextInvoiceNumber + 1 }))
+        return value
+      },
+      generateDeliveryNoteNumber: () => {
+        const value = formatGeneratedNumber(
+          numberingSettings.deliveryNoteTemplate,
+          numberingSettings.nextDeliveryNoteNumber,
+          numberingSettings.numberPadding,
+        )
+        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
+        return value
+      },
     }),
-    [hydrated, companies, isAdminLoggedIn, products, trucks, constructionSites, records, selectedCompany],
+    [hydrated, companies, isAdminLoggedIn, products, trucks, constructionSites, records, selectedCompany, numberingSettings],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

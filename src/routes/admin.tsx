@@ -15,6 +15,7 @@ const settingsNavItems = [
   { to: '/admin/lkw', label: 'LKW', icon: <Clock className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/kunden', label: 'Kunden', icon: <Building2 className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/baustellen', label: 'Baustellen', icon: <MapPinned className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/einstellungen', label: 'Einstellungen', icon: <Settings className="h-4 w-4" strokeWidth={2.25} /> },
 ]
 
 function AdminPage() {

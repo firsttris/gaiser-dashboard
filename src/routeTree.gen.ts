@@ -24,6 +24,7 @@ import { Route as AdminMaterialRouteImport } from './routes/admin.material'
 import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
 import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
+import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
 import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
@@ -104,6 +105,11 @@ const AdminKundenRoute = AdminKundenRouteImport.update({
   path: '/kunden',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
+  id: '/einstellungen',
+  path: '/einstellungen',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
   id: '/baustellen',
   path: '/baustellen',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/admin/baustellen'
+    | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/lkw'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/'
     | '/kunde'
     | '/admin/baustellen'
+    | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/lkw'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/admin/baustellen'
+    | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
     | '/admin/lkw'
@@ -365,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKundenRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/einstellungen': {
+      id: '/admin/einstellungen'
+      path: '/einstellungen'
+      fullPath: '/admin/einstellungen'
+      preLoaderRoute: typeof AdminEinstellungenRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/baustellen': {
       id: '/admin/baustellen'
       path: '/baustellen'
@@ -398,6 +417,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBaustellenRoute: typeof AdminBaustellenRoute
+  AdminEinstellungenRoute: typeof AdminEinstellungenRoute
   AdminKundenRoute: typeof AdminKundenRoute
   AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminLkwRoute: typeof AdminLkwRoute
@@ -410,6 +430,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBaustellenRoute: AdminBaustellenRoute,
+  AdminEinstellungenRoute: AdminEinstellungenRoute,
   AdminKundenRoute: AdminKundenRoute,
   AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminLkwRoute: AdminLkwRoute,

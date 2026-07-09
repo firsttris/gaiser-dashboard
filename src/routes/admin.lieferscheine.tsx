@@ -15,7 +15,7 @@ import { createHistoryCsv, deliveryNoteBadge, deliveryNoteStatusFilterOf, downlo
 export const Route = createFileRoute('/admin/lieferscheine')({ component: AdminLieferscheinePage })
 
 function AdminLieferscheinePage() {
-  const { companies, records, updateRecordStatus, assignInvoice, assignCancel } = useAppState()
+  const { companies, records, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
@@ -70,7 +70,8 @@ function AdminLieferscheinePage() {
     const invoiceItems = selectedGroups.flatMap((g) => g.items)
     const deliveryNoteRefs = selectedGroups.map((g) => g.id).join(', ')
     const customer = companies.find((c) => c.name === invoiceItems[0].company)
-    const invoiceNo = await downloadInvoicePdf(invoiceItems, customer, deliveryNoteRefs, undefined, isReverseCharge)
+    const invoiceNo = generateInvoiceNumber()
+    await downloadInvoicePdf(invoiceItems, customer, deliveryNoteRefs, invoiceNo, isReverseCharge)
     invoiceItems.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(invoiceItems.map((r) => r.id), invoiceNo, isReverseCharge)
     clearSelection()

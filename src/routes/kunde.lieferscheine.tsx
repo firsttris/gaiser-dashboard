@@ -51,8 +51,9 @@ function LieferscheinePage() {
             id={items[0].invoiceId}
             color="blue"
             onClick={() => {
-              const group = companyRecords.filter((r) => r.invoiceId === items[0].invoiceId)
-              downloadInvoicePdf(group, selectedCompany ?? undefined, id, items[0].invoiceId, items[0].invoiceReverseCharge)
+              const invoiceId = items[0].invoiceId!
+              const group = companyRecords.filter((r) => r.invoiceId === invoiceId)
+              downloadInvoicePdf(group, selectedCompany ?? undefined, id, invoiceId, items[0].invoiceReverseCharge)
             }}
           />
         )}
