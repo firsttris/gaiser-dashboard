@@ -43,6 +43,44 @@ function formatQty(value: number) {
   return value.toLocaleString('de-DE', { maximumFractionDigits: 2 })
 }
 
+type InvoiceLineItem = {
+  type: RecordItem['type']
+  productName: string
+  unit: string
+  unitPrice: number
+  amount: number
+  total: number
+}
+
+function aggregateInvoiceLineItems(invoiceRecords: RecordItem[]): InvoiceLineItem[] {
+  const byKey = new Map<string, InvoiceLineItem>()
+  const orderedItems: InvoiceLineItem[] = []
+
+  for (const record of invoiceRecords) {
+    const key = [record.type, record.productName, record.unit, record.unitPrice].join('::')
+    const existing = byKey.get(key)
+
+    if (existing) {
+      existing.amount += record.amount
+      existing.total += record.total
+      continue
+    }
+
+    const item: InvoiceLineItem = {
+      type: record.type,
+      productName: record.productName,
+      unit: record.unit,
+      unitPrice: record.unitPrice,
+      amount: record.amount,
+      total: record.total,
+    }
+    byKey.set(key, item)
+    orderedItems.push(item)
+  }
+
+  return orderedItems
+}
+
 function drawLetterhead(pdf: jsPDF, left: number, right: number, logoDataUrl: string) {
   const logoWidth = 50
   const logoHeight = logoWidth * LOGO_ASPECT_RATIO
@@ -246,27 +284,28 @@ export async function downloadInvoicePdf(
   pdf.line(left, y, right, y)
   y += 7
 
+  const lineItems = aggregateInvoiceLineItems(invoiceRecords)
   let subtotal = 0
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(9)
 
-  for (const [index, record] of invoiceRecords.entries()) {
-    subtotal += record.total
+  for (const [index, item] of lineItems.entries()) {
+    subtotal += item.total
 
     if (y > 245) {
       pdf.addPage()
       y = 20
     }
 
-    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const service = `${flowLabel(item.type)}: ${item.productName}`
     const serviceShort = service.length > 44 ? `${service.slice(0, 41)}...` : service
 
     pdf.text(`${index + 1}.`, cols.pos, y)
     pdf.text(serviceShort, cols.bezeichnung, y)
-    pdf.text(formatQty(record.amount), cols.anzahl, y, { align: 'right' })
-    pdf.text(record.unit, cols.einheit, y)
-    pdf.text(money(record.unitPrice), cols.einzelpreis, y, { align: 'right' })
-    pdf.text(money(record.total), cols.gesamtpreis, y, { align: 'right' })
+    pdf.text(formatQty(item.amount), cols.anzahl, y, { align: 'right' })
+    pdf.text(item.unit, cols.einheit, y)
+    pdf.text(money(item.unitPrice), cols.einzelpreis, y, { align: 'right' })
+    pdf.text(money(item.total), cols.gesamtpreis, y, { align: 'right' })
 
     y += 7
   }
