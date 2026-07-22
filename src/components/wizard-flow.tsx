@@ -1,7 +1,8 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
-import { useAppState, type Company, type FlowType } from '../state/app-state'
+import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 
 type ProductVisual = {
@@ -80,6 +81,7 @@ export function WizardFlow({
     amount: number
     unit: string
     total: number
+    record: RecordItem
   } | null>(null)
 
   const availableProducts = products.filter((p) => p.flow === flowType)
@@ -102,13 +104,14 @@ export function WizardFlow({
   function submitRecord() {
     if (!selectedProduct || !validAmount || !validConstructionSiteName) return
 
-    createRecord({
+    const record = createRecord({
       type: flowType,
       product: selectedProduct,
       amount: parsedAmount,
       constructionSiteName,
       company,
     })
+    if (!record) return
 
     setSuccessRecord({
       type: flowType,
@@ -118,11 +121,23 @@ export function WizardFlow({
       amount: parsedAmount,
       unit: selectedProduct.unit,
       total,
+      record,
     })
     setStep(3)
     setSelectedProductId(products.find((p) => p.flow === flowType)?.id ?? 0)
     setAmount('')
     setConstructionSiteName('')
+  }
+
+  function redownloadDeliveryNote() {
+    if (!successRecord || !selectedCompany) return
+
+    void downloadCombinedDeliveryNote(
+      [successRecord.record],
+      selectedCompany.name,
+      successRecord.record.deliveryNoteId,
+      selectedCompany,
+    )
   }
 
   if (step === 1) {
@@ -325,7 +340,7 @@ export function WizardFlow({
           </span>
           <div>
             <h3 className="font-title text-4xl text-slate-900">Vorgang erfolgreich angelegt</h3>
-            <p className="text-slate-600">Der Eintrag wurde gespeichert und ist in den Vorgängen sichtbar.</p>
+            <p className="text-slate-600">Der Lieferschein {successRecord.record.deliveryNoteId} wurde erstellt und kann jederzeit heruntergeladen werden.</p>
           </div>
         </div>
 
@@ -369,6 +384,13 @@ export function WizardFlow({
         </dl>
 
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={redownloadDeliveryNote}
+            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+          >
+            Lieferschein herunterladen
+          </button>
           {onExit ? (
             <button
               type="button"

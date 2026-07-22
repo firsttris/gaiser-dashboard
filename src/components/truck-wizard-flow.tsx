@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
-import { useAppState, type Company } from '../state/app-state'
+import { useAppState, type Company, type RecordItem } from '../state/app-state'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 
 function money(value: number) {
   return new Intl.NumberFormat('de-DE', {
@@ -31,6 +32,7 @@ export function TruckWizardFlow({
     truckName: string
     hours: number
     total: number
+    record: RecordItem
   } | null>(null)
 
   const selectedTruck = trucks.find((t) => t.id === Number(selectedTruckId))
@@ -48,23 +50,30 @@ export function TruckWizardFlow({
   function submitRecord() {
     if (!selectedTruck || !validHours || !validConstructionSiteName) return
 
-    createTruckRecord({
+    const record = createTruckRecord({
       truck: selectedTruck,
       hours: parsedHours,
       constructionSiteName,
       company,
     })
+    if (!record) return
 
     setSuccessRecord({
       constructionSiteName: constructionSiteName.trim(),
       truckName: selectedTruck.name,
       hours: parsedHours,
       total,
+      record,
     })
     setStep(3)
     setSelectedTruckId(trucks[0]?.id ?? 0)
     setHours('')
     setConstructionSiteName('')
+  }
+
+  function redownloadDeliveryNote() {
+    if (!successRecord) return
+    void downloadCombinedDeliveryNote([successRecord.record], company.name, successRecord.record.deliveryNoteId, company)
   }
 
   if (step === 1) {
@@ -210,7 +219,7 @@ export function TruckWizardFlow({
           </span>
           <div>
             <h3 className="font-title text-4xl text-slate-900">Vorgang erfolgreich angelegt</h3>
-            <p className="text-slate-600">Der Eintrag wurde gespeichert und ist in den Vorgängen sichtbar.</p>
+            <p className="text-slate-600">Der Lieferschein {successRecord.record.deliveryNoteId} wurde erstellt und kann jederzeit heruntergeladen werden.</p>
           </div>
         </div>
 
@@ -234,6 +243,13 @@ export function TruckWizardFlow({
         </dl>
 
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={redownloadDeliveryNote}
+            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+          >
+            Lieferschein herunterladen
+          </button>
           <button
             type="button"
             onClick={onExit}

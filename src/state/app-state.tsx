@@ -181,8 +181,8 @@ type AppState = {
   adminLogin: (password: string) => LoginResult
   adminLogout: () => void
   clearCache: () => void
-  createRecord: (input: CreateRecordInput) => void
-  createTruckRecord: (input: CreateTruckRecordInput) => void
+  createRecord: (input: CreateRecordInput) => RecordItem | null
+  createTruckRecord: (input: CreateTruckRecordInput) => RecordItem | null
   createCompany: (input: CreateCompanyInput) => CreateCompanyResult
   updateCompany: (input: UpdateCompanyInput) => CreateCompanyResult
   deleteCompany: (input: DeleteCompanyInput) => CreateCompanyResult
@@ -624,10 +624,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       createRecord: ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
         const activeCompany = company ?? selectedCompany
-        if (!activeCompany) return
+        if (!activeCompany) return null
 
         const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
-        if (!resolved) return
+        if (!resolved) return null
 
         if (resolved.isNew) {
           setConstructionSites((prev) => [...prev, resolved.site])
@@ -635,6 +635,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         const unitPrice = getUnitPrice(product, type, activeCompany.priceCategory)
         const total = unitPrice * amount
+        const deliveryNoteId = formatGeneratedNumber(
+          numberingSettings.deliveryNoteTemplate,
+          numberingSettings.nextDeliveryNoteNumber,
+          numberingSettings.numberPadding,
+        )
         const nextRecord: RecordItem = {
           id: Date.now(),
           company: activeCompany.name,
@@ -646,18 +651,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           unit: product.unit,
           unitPrice,
           total,
-          status: 'offen',
+          status: 'lieferschein',
           createdAt: new Date().toLocaleString('de-DE'),
+          deliveryNoteId,
         }
 
+        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
         setRecords((prev) => [nextRecord, ...prev])
+        return nextRecord
       },
       createTruckRecord: ({ truck, hours, constructionSiteName, company }: CreateTruckRecordInput) => {
         const activeCompany = company ?? selectedCompany
-        if (!activeCompany) return
+        if (!activeCompany) return null
 
         const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
-        if (!resolved) return
+        if (!resolved) return null
 
         if (resolved.isNew) {
           setConstructionSites((prev) => [...prev, resolved.site])
@@ -665,6 +673,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         const unitPrice = activeCompany.priceCategory === 'private' ? truck.privatePrice : truck.businessPrice
         const total = unitPrice * hours
+        const deliveryNoteId = formatGeneratedNumber(
+          numberingSettings.deliveryNoteTemplate,
+          numberingSettings.nextDeliveryNoteNumber,
+          numberingSettings.numberPadding,
+        )
         const nextRecord: RecordItem = {
           id: Date.now(),
           company: activeCompany.name,
@@ -676,11 +689,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           unit: 'Std.',
           unitPrice,
           total,
-          status: 'offen',
+          status: 'lieferschein',
           createdAt: new Date().toLocaleString('de-DE'),
+          deliveryNoteId,
         }
 
+        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
         setRecords((prev) => [nextRecord, ...prev])
+        return nextRecord
       },
       createCompany: ({ shortCode, name, customerNumber, street, postalCode, city, pin, priceCategory }: CreateCompanyInput) => {
         const cleanedShortCode = shortCode.trim().toUpperCase()

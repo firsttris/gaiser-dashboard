@@ -1,22 +1,27 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable, shortDocId } from '../components/history-table'
+import { SelectionActionBar } from '../components/selection-action-bar'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { createHistoryCsv, downloadCsvFile, statusLabel } from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile, money, statusLabel } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { RecordActionsBar } from '../components/record-actions-bar'
 
 export const Route = createFileRoute('/admin/vorgaenge')({ component: AdminVorgaengePage })
 
 function AdminVorgaengePage() {
-  const { companies, records, updateRecordStatus, assignDeliveryNote, generateDeliveryNoteNumber } = useAppState()
+  const { companies, records, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
+  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
+  const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -54,8 +59,9 @@ function AdminVorgaengePage() {
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
   const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
-  const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
-  const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1 && !selectedHaveDeliveryNote
+  const selectedAllOpenLieferschein = selectedRecords.length > 0 && selectedRecords.every((r) => r.status === 'lieferschein')
+  const canCreateInvoice = selectedAllOpenLieferschein && selectedCompanies.length === 1
+  const canStorno = selectedAllOpenLieferschein
 
   function exportSelectedAsCsv() {
     if (selectedRecords.length === 0) return
@@ -64,13 +70,25 @@ function AdminVorgaengePage() {
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
   }
 
-  function createDeliveryNotes() {
-    if (selectedRecords.length === 0 || selectedCompanies.length !== 1) return
-    const deliveryNoteId = generateDeliveryNoteNumber()
-    assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
-    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
+  function stornoSelection() {
+    selectedRecords.forEach((record) => {
+      const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${record.id}`
+      downloadStornoDoc([record], record.company, cancelId, record.deliveryNoteId)
+      assignCancel([record.id], cancelId)
+      updateRecordStatus(record.id, 'storniert')
+    })
+    clearSelection()
+  }
+
+  async function createSammelrechnung(isReverseCharge: boolean) {
+    if (!canCreateInvoice) return
+    const deliveryNoteRefs = selectedRecords.map((r) => r.deliveryNoteId).filter(Boolean).join(', ')
     const customer = companies.find((c) => c.name === selectedCompanies[0])
-    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId, customer)
+    const invoiceNo = generateInvoiceNumber()
+    await downloadInvoicePdf(selectedRecords, customer, deliveryNoteRefs, invoiceNo, isReverseCharge)
+    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
+    assignInvoice(selectedRecords.map((r) => r.id), invoiceNo, isReverseCharge)
+    clearSelection()
   }
 
   function handleDeliveryNoteClick(deliveryNoteId: string) {
@@ -114,15 +132,38 @@ function AdminVorgaengePage() {
           </div>
         </div>
 
-        <RecordActionsBar
-          selectedCount={selectedCount}
-          selectedTotal={selectedTotal}
-          canCreateDeliveryNote={canCreateCompanyDocuments}
-          selectedHaveDeliveryNote={selectedHaveDeliveryNote}
-          multipleCompaniesSelected={selectedCompanies.length > 1}
-          onCreateDeliveryNote={createDeliveryNotes}
-          onExportCsv={exportSelectedAsCsv}
-          onClearSelection={clearSelection}
+        <SelectionActionBar
+          count={selectedCount}
+          noun="Eintrag"
+          pluralSuffix="e"
+          total={selectedTotal}
+          warning={
+            selectedAllOpenLieferschein && selectedCompanies.length > 1
+              ? 'Rechnung ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'
+              : undefined
+          }
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+            {
+              label: 'Stornieren',
+              disabled: !canStorno,
+              onClick: () => setPendingAction({
+                action: stornoSelection,
+                title: 'Lieferscheine stornieren',
+                message: `Sind Sie sicher, dass Sie ${selectedRecords.length} Eintrag${selectedRecords.length !== 1 ? 'e' : ''} stornieren möchten?`,
+              }),
+            },
+            {
+              label: 'Rechnung erstellen',
+              variant: 'primary',
+              disabled: !canCreateInvoice,
+              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
+            },
+          ]}
         />
 
         <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">
@@ -198,6 +239,66 @@ function AdminVorgaengePage() {
           />
         )}
       </article>
+
+      {sammelrechnungOpen && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setSammelrechnungOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {selectedRecords.length} Eintrag{selectedRecords.length !== 1 ? 'e' : ''} fuer {selectedCompanies[0]} · {money(selectedTotal)}
+            </p>
+            <label className="mt-4 flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={sammelReverseCharge}
+                onChange={(e) => setSammelReverseCharge(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
+            </label>
+            {sammelReverseCharge && (
+              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSammelrechnungOpen(false)}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  createSammelrechnung(sammelReverseCharge)
+                  setSammelrechnungOpen(false)
+                }}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Rechnung erstellen
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      <ConfirmDialog
+        open={pendingAction !== null}
+        title={pendingAction?.title ?? ''}
+        message={pendingAction?.message ?? ''}
+        confirmLabel="Ja"
+        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onCancel={() => setPendingAction(null)}
+      />
     </section>
   )
 }

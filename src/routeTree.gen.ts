@@ -16,13 +16,11 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
 import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
 import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
-import { Route as KundeLieferscheineRouteImport } from './routes/kunde.lieferscheine'
 import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
 import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
 import { Route as AdminNeuerVorgangRouteImport } from './routes/admin.neuer-vorgang'
 import { Route as AdminMaterialRouteImport } from './routes/admin.material'
 import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
-import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
 import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
@@ -65,11 +63,6 @@ const KundeNeuerVorgangRoute = KundeNeuerVorgangRouteImport.update({
   path: '/neuer-vorgang',
   getParentRoute: () => KundeRoute,
 } as any)
-const KundeLieferscheineRoute = KundeLieferscheineRouteImport.update({
-  id: '/lieferscheine',
-  path: '/lieferscheine',
-  getParentRoute: () => KundeRoute,
-} as any)
 const AdminVorgaengeRoute = AdminVorgaengeRouteImport.update({
   id: '/vorgaenge',
   path: '/vorgaenge',
@@ -93,11 +86,6 @@ const AdminMaterialRoute = AdminMaterialRouteImport.update({
 const AdminLkwRoute = AdminLkwRouteImport.update({
   id: '/lkw',
   path: '/lkw',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
-  id: '/lieferscheine',
-  path: '/lieferscheine',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminKundenRoute = AdminKundenRouteImport.update({
@@ -139,13 +127,11 @@ export interface FileRoutesByFullPath {
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
-  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
@@ -160,13 +146,11 @@ export interface FileRoutesByTo {
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
-  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/admin': typeof AdminIndexRoute
@@ -182,13 +166,11 @@ export interface FileRoutesById {
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
-  '/kunde/lieferscheine': typeof KundeLieferscheineRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
@@ -206,13 +188,11 @@ export interface FileRouteTypes {
     | '/admin/baustellen'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
-    | '/kunde/lieferscheine'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
@@ -227,13 +207,11 @@ export interface FileRouteTypes {
     | '/admin/baustellen'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
-    | '/kunde/lieferscheine'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
     | '/admin'
@@ -248,13 +226,11 @@ export interface FileRouteTypes {
     | '/admin/baustellen'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
-    | '/kunde/lieferscheine'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
@@ -321,13 +297,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KundeNeuerVorgangRouteImport
       parentRoute: typeof KundeRoute
     }
-    '/kunde/lieferscheine': {
-      id: '/kunde/lieferscheine'
-      path: '/lieferscheine'
-      fullPath: '/kunde/lieferscheine'
-      preLoaderRoute: typeof KundeLieferscheineRouteImport
-      parentRoute: typeof KundeRoute
-    }
     '/admin/vorgaenge': {
       id: '/admin/vorgaenge'
       path: '/vorgaenge'
@@ -361,13 +330,6 @@ declare module '@tanstack/react-router' {
       path: '/lkw'
       fullPath: '/admin/lkw'
       preLoaderRoute: typeof AdminLkwRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/lieferscheine': {
-      id: '/admin/lieferscheine'
-      path: '/lieferscheine'
-      fullPath: '/admin/lieferscheine'
-      preLoaderRoute: typeof AdminLieferscheineRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/kunden': {
@@ -419,7 +381,6 @@ interface AdminRouteChildren {
   AdminBaustellenRoute: typeof AdminBaustellenRoute
   AdminEinstellungenRoute: typeof AdminEinstellungenRoute
   AdminKundenRoute: typeof AdminKundenRoute
-  AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminLkwRoute: typeof AdminLkwRoute
   AdminMaterialRoute: typeof AdminMaterialRoute
   AdminNeuerVorgangRoute: typeof AdminNeuerVorgangRoute
@@ -432,7 +393,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBaustellenRoute: AdminBaustellenRoute,
   AdminEinstellungenRoute: AdminEinstellungenRoute,
   AdminKundenRoute: AdminKundenRoute,
-  AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminLkwRoute: AdminLkwRoute,
   AdminMaterialRoute: AdminMaterialRoute,
   AdminNeuerVorgangRoute: AdminNeuerVorgangRoute,
@@ -459,14 +419,12 @@ const KundeNeuerVorgangRouteWithChildren =
   KundeNeuerVorgangRoute._addFileChildren(KundeNeuerVorgangRouteChildren)
 
 interface KundeRouteChildren {
-  KundeLieferscheineRoute: typeof KundeLieferscheineRoute
   KundeNeuerVorgangRoute: typeof KundeNeuerVorgangRouteWithChildren
   KundeRechnungenRoute: typeof KundeRechnungenRoute
   KundeVorgaengeRoute: typeof KundeVorgaengeRoute
 }
 
 const KundeRouteChildren: KundeRouteChildren = {
-  KundeLieferscheineRoute: KundeLieferscheineRoute,
   KundeNeuerVorgangRoute: KundeNeuerVorgangRouteWithChildren,
   KundeRechnungenRoute: KundeRechnungenRoute,
   KundeVorgaengeRoute: KundeVorgaengeRoute,

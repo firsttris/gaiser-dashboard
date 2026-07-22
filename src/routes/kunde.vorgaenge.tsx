@@ -8,12 +8,12 @@ import { useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { RecordActionsBar } from '../components/record-actions-bar'
+import { SelectionActionBar } from '../components/selection-action-bar'
 
 export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPage })
 
 function HistoryPage() {
-  const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote, generateDeliveryNoteNumber } = useAppState()
+  const { isLoggedIn, records, selectedCompany } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
@@ -52,17 +52,6 @@ function HistoryPage() {
   } = useRecordSelection(filteredRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
-  const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
-  const canCreateDeliveryNote = selectedCount > 0 && !selectedHaveDeliveryNote
-
-  function createCombinedDeliveryNote() {
-    if (!canCreateDeliveryNote) return
-
-    const deliveryNoteId = generateDeliveryNoteNumber()
-    assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
-    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
-    downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId, selectedCompany ?? undefined)
-  }
 
   function handleDeliveryNoteClick(deliveryNoteId: string) {
     const group = companyRecords.filter((r) => r.deliveryNoteId === deliveryNoteId)
@@ -167,14 +156,18 @@ function HistoryPage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
-        <RecordActionsBar
-          selectedCount={selectedCount}
-          selectedTotal={selectedTotal}
-          canCreateDeliveryNote={canCreateDeliveryNote}
-          selectedHaveDeliveryNote={selectedHaveDeliveryNote}
-          onCreateDeliveryNote={createCombinedDeliveryNote}
-          onExportCsv={exportSelectedAsCsv}
-          onClearSelection={clearSelection}
+        <SelectionActionBar
+          count={selectedCount}
+          noun="Eintrag"
+          pluralSuffix="e"
+          total={selectedTotal}
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+          ]}
         />
 
         {filteredRecords.length === 0 ? (

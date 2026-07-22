@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, Truck, X } from 'lucide-react'
+import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
@@ -148,15 +148,6 @@ function AdminPage() {
               </NavLink>
 
               <NavLink
-                to="/admin/lieferscheine"
-                compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<Truck className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                Lieferscheine
-              </NavLink>
-
-              <NavLink
                 to="/admin/rechnungen"
                 compact
                 onClick={() => setIsMenuOpen(false)}
@@ -202,12 +193,6 @@ function AdminPage() {
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
               Vorgänge
-            </NavLink>
-            <NavLink
-              to="/admin/lieferscheine"
-              icon={<Truck className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              Lieferscheine
             </NavLink>
             <NavLink
               to="/admin/rechnungen"
