@@ -147,7 +147,7 @@ export function HistoryTable({
                   checked={areAllVisibleSelected}
                   onChange={(event) => onSelectAll(event.target.checked)}
                   className="h-4 w-4 rounded border-slate-300"
-                  aria-label="Alle sichtbaren Eintraege markieren"
+                  aria-label="Alle sichtbaren Einträge markieren"
                 />
               </th>
               <th className="w-28 px-2 py-2">Zeit</th>

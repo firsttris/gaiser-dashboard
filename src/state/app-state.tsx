@@ -585,7 +585,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       login: (companyId: string, pin: string) => {
         const company = companies.find((item) => item.id === companyId)
         if (!company) {
-          return { ok: false, message: 'Bitte waehle eine Firma aus.' }
+          return { ok: false, message: 'Bitte wähle eine Firma aus.' }
         }
 
         if (company.pin !== pin) {
@@ -704,7 +704,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
         if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname und Kuerzel ausfuellen.' }
+          return { ok: false, message: 'Bitte Kundenname und Kürzel ausfüllen.' }
         }
 
         if (cleanedPin.length !== 4) {
@@ -713,7 +713,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         const hasShortCode = companies.some((company) => company.shortCode === cleanedShortCode)
         if (hasShortCode) {
-          return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' }
+          return { ok: false, message: 'Das Kundenkürzel ist bereits vergeben.' }
         }
 
         const company: Company = {
@@ -742,7 +742,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
         if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname und Kuerzel ausfuellen.' }
+          return { ok: false, message: 'Bitte Kundenname und Kürzel ausfüllen.' }
         }
 
         if (cleanedPin.length !== 4) {
@@ -753,7 +753,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           (item) => item.id !== id && item.shortCode.toUpperCase() === cleanedShortCode,
         )
         if (hasShortCode) {
-          return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' }
+          return { ok: false, message: 'Das Kundenkürzel ist bereits vergeben.' }
         }
 
         const updatedCompany: Company = {
@@ -799,7 +799,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (hasHistory) {
           return {
             ok: false,
-            message: 'Firma kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+            message: 'Firma kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
           }
         }
 
@@ -818,7 +818,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const parsedBusinessPrice = Number(businessPrice)
 
         if (!cleanedName || !cleanedUnit) {
-          return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' }
+          return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' }
         }
 
         if (
@@ -827,7 +827,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           parsedPrivatePrice < 0 ||
           parsedBusinessPrice < 0
         ) {
-          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
         }
 
         const nextId = products.reduce((maxValue, product) => Math.max(maxValue, product.id), 0) + 1
@@ -857,7 +857,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const parsedBusinessPrice = Number(businessPrice)
 
         if (!cleanedName || !cleanedUnit) {
-          return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' }
+          return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' }
         }
 
         if (
@@ -866,7 +866,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           parsedPrivatePrice < 0 ||
           parsedBusinessPrice < 0
         ) {
-          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
         }
 
         const updatedProduct: Product = {
@@ -903,7 +903,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (hasHistory) {
           return {
             ok: false,
-            message: 'Produkt kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+            message: 'Produkt kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
           }
         }
 
@@ -924,7 +924,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const parsedBusinessPrice = Number(businessPrice)
 
         if (!cleanedName) {
-          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' }
+          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' }
         }
 
         if (
@@ -933,7 +933,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           parsedPrivatePrice < 0 ||
           parsedBusinessPrice < 0
         ) {
-          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
         }
 
         const nextId = trucks.reduce((maxValue, truck) => Math.max(maxValue, truck.id), 0) + 1
@@ -958,7 +958,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         const parsedBusinessPrice = Number(businessPrice)
 
         if (!cleanedName) {
-          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' }
+          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' }
         }
 
         if (
@@ -967,7 +967,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           parsedPrivatePrice < 0 ||
           parsedBusinessPrice < 0
         ) {
-          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
         }
 
         const updatedTruck: Truck = {
@@ -1000,7 +1000,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (hasHistory) {
           return {
             ok: false,
-            message: 'LKW kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+            message: 'LKW kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
           }
         }
 
@@ -1014,7 +1014,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       createConstructionSite: ({ name }: CreateConstructionSiteInput) => {
         const cleanedName = normalizeConstructionSiteName(name)
         if (!cleanedName) {
-          return { ok: false, message: 'Bitte Baustellenname ausfuellen.' }
+          return { ok: false, message: 'Bitte Baustellennamen ausfüllen.' }
         }
 
         const exists = constructionSites.some(
@@ -1040,7 +1040,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         const cleanedName = normalizeConstructionSiteName(name)
         if (!cleanedName) {
-          return { ok: false, message: 'Bitte Baustellenname ausfuellen.' }
+          return { ok: false, message: 'Bitte Baustellennamen ausfüllen.' }
         }
 
         const alreadyExists = constructionSites.some(
@@ -1080,7 +1080,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (hasHistory) {
           return {
             ok: false,
-            message: 'Baustelle kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+            message: 'Baustelle kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
           }
         }
 

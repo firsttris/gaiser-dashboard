@@ -109,7 +109,7 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
                   onClick={() => onRemove(product.id)}
                   className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                 >
-                  Loeschen
+                  Löschen
                 </button>
               </>
             )}
@@ -209,7 +209,7 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
                         onClick={() => onRemove(product.id)}
                         className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
                       >
-                        Loeschen
+                        Löschen
                       </button>
                     </>
                   )}
@@ -297,7 +297,7 @@ function AdminProductsPage() {
     const product = products.find((item) => item.id === productId)
     if (!product) return
 
-    if (!window.confirm(`Produkt ${product.name} wirklich loeschen?`)) {
+    if (!window.confirm(`Produkt ${product.name} wirklich löschen?`)) {
       return
     }
 
@@ -309,7 +309,7 @@ function AdminProductsPage() {
 
     if (editingProductId === productId) cancelEdit()
 
-    editForm.setMessage(`Produkt ${product.name} wurde geloescht.`, 'success')
+    editForm.setMessage(`Produkt ${product.name} wurde gelöscht.`, 'success')
   }
 
   const listProps = {
@@ -331,7 +331,7 @@ function AdminProductsPage() {
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Material</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Material koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
+        Material können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
       <form onSubmit={submitProduct} className="mt-4 grid gap-4 md:grid-cols-6">
@@ -387,7 +387,7 @@ function AdminProductsPage() {
       <div className="mt-6 space-y-8">
         <div>
           <h3 className="font-title text-3xl text-slate-900">Annahme</h3>
-          <p className="mt-1 text-sm text-slate-600">Material fuer Kundenanlieferungen.</p>
+          <p className="mt-1 text-sm text-slate-600">Material für Kundenanlieferungen.</p>
 
           <ProductCards type="dropoff" items={dropoffProducts} {...listProps} />
           <ProductTable type="dropoff" items={dropoffProducts} {...listProps} />
@@ -395,7 +395,7 @@ function AdminProductsPage() {
 
         <div>
           <h3 className="font-title text-3xl text-slate-900">Verkauf</h3>
-          <p className="mt-1 text-sm text-slate-600">Material fuer Abholung durch den Kunden.</p>
+          <p className="mt-1 text-sm text-slate-600">Material für Abholung durch den Kunden.</p>
 
           <ProductCards type="pickup" items={pickupProducts} {...listProps} />
           <ProductTable type="pickup" items={pickupProducts} {...listProps} />

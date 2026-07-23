@@ -65,17 +65,17 @@ function App() {
               ohne Umwege.
             </h1>
             <p className="max-w-sm text-slate-600">
-              Firma suchen, PIN eingeben, Vorgang anlegen. Lieferschein runterladen.
+              Firma suchen, PIN eingeben, Vorgang anlegen. Lieferschein herunterladen.
             </p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold">Demo-Hinweis</p>
-              <p>Beispiel: KR fuer Krampfert Wohnbau GmbH, PIN 1234.</p>
+              <p>Beispiel: KR für Krampfert Wohnbau GmbH, PIN 1234.</p>
             </div>
           </div>
 
           <form onSubmit={submitLogin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
             <div className="relative">
-              <label className="text-sm font-semibold text-slate-700">Firma / Kuerzel</label>
+              <label className="text-sm font-semibold text-slate-700">Firma / Kürzel</label>
               <input
                 value={query}
                 onChange={(event) => {
@@ -137,6 +137,7 @@ function App() {
                 Zum Admin-Bereich
               </Link>
             </div>
+            <p className="text-sm text-slate-500">Beispiel: KR für Krampfert Wohnbau GmbH, PIN 1234.</p>
           </form>
         </div>
       </section>

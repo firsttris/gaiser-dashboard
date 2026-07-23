@@ -52,9 +52,9 @@ function AdminPage() {
               </p>
               <h1 className="font-title mt-3 text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
               <p className="mt-3 text-slate-600">
-                Geschuetzter Bereich fuer Produktpflege und Kundenanlage.
+                Geschützter Bereich für Produktpflege und Kundenanlage.
               </p>
-              <p className="mt-4 text-sm text-slate-500">Initiales Passwort fuer Demo: admin</p>
+              <p className="mt-4 text-sm text-slate-500">Initiales Passwort für Demo: admin</p>
             </div>
 
             <form onSubmit={submitAdminLogin} className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -110,7 +110,7 @@ function AdminPage() {
               <button
                 type="button"
                 aria-expanded={isMenuOpen}
-                aria-label={isMenuOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
+                aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
                 onClick={() => setIsMenuOpen((open) => !open)}
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
               >

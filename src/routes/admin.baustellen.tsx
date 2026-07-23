@@ -62,7 +62,7 @@ function AdminSitesPage() {
     const site = constructionSites.find((item) => item.id === siteId)
     if (!site) return
 
-    if (!window.confirm(`Baustelle ${site.name} wirklich loeschen?`)) {
+    if (!window.confirm(`Baustelle ${site.name} wirklich löschen?`)) {
       return
     }
 
@@ -78,14 +78,14 @@ function AdminSitesPage() {
     }
 
     setEditError('')
-    setEditSuccess(`Baustelle ${site.name} wurde geloescht.`)
+    setEditSuccess(`Baustelle ${site.name} wurde gelöscht.`)
   }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Baustellen</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Baustellen koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
+        Baustellen können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
       <form onSubmit={submitConstructionSite} className="mt-4 grid gap-4 md:grid-cols-5">
@@ -160,7 +160,7 @@ function AdminSitesPage() {
                     onClick={() => removeConstructionSite(site.id)}
                     className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                   >
-                    Loeschen
+                    Löschen
                   </button>
                 </>
               )}
@@ -224,7 +224,7 @@ function AdminSitesPage() {
                           onClick={() => removeConstructionSite(site.id)}
                           className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
                         >
-                          Loeschen
+                          Löschen
                         </button>
                       </>
                     )}

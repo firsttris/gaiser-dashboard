@@ -8,7 +8,7 @@ const TOKEN_HINTS = [
   { token: '{JAHR}', description: 'Jahr, 4-stellig (z.B. 2026)' },
   { token: '{MONAT}', description: 'Monat, 2-stellig (z.B. 06)' },
   { token: '{TAG}', description: 'Tag, 2-stellig (z.B. 29)' },
-  { token: '{NUMMER}', description: 'Laufende Nummer, mit Nullen aufgefuellt' },
+  { token: '{NUMMER}', description: 'Laufende Nummer, mit Nullen aufgefüllt' },
 ]
 
 function AdminEinstellungenPage() {
@@ -52,7 +52,7 @@ function AdminEinstellungenPage() {
       </p>
 
       <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-        <p className="font-semibold text-slate-700">Verfuegbare Platzhalter</p>
+        <p className="font-semibold text-slate-700">Verfügbare Platzhalter</p>
         <ul className="mt-2 space-y-1">
           {TOKEN_HINTS.map(({ token, description }) => (
             <li key={token}>
@@ -76,7 +76,7 @@ function AdminEinstellungenPage() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Naechste Rechnungsnummer</label>
+            <label className="text-sm font-semibold text-slate-700">Nächste Rechnungsnummer</label>
             <input
               type="number"
               min={1}
@@ -99,7 +99,7 @@ function AdminEinstellungenPage() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Naechste Lieferscheinnummer</label>
+            <label className="text-sm font-semibold text-slate-700">Nächste Lieferscheinnummer</label>
             <input
               type="number"
               min={1}

@@ -136,7 +136,7 @@ export function TruckWizardFlow({
             onClick={onExit}
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
-            Zurueck
+            Zurück
           </button>
           <button
             type="button"
@@ -144,7 +144,7 @@ export function TruckWizardFlow({
             disabled={!validHours || !validConstructionSiteName}
             className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Weiter zu Pruefung
+            Weiter zur Prüfung
           </button>
         </div>
       </div>

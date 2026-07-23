@@ -406,7 +406,7 @@ export function downloadStornoDoc(
   pdf.text('Gaiser Baustoffe', left + 4, y + 16)
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(9)
-  pdf.text('Musterstrasse 1, 10115 Berlin', left + 4, y + 21)
+  pdf.text('Musterstraße 1, 10115 Berlin', left + 4, y + 21)
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(10)
@@ -514,7 +514,7 @@ export function downloadStornoDoc(
   y += 14
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(9)
-  pdf.text('Diese Gutschrift storniert den oben genannten Beleg vollstaendig.', left, y)
+  pdf.text('Diese Gutschrift storniert den oben genannten Beleg vollständig.', left, y)
 
   pdf.save(`storno-${toSafeFileDate(cancelId)}.pdf`)
 }

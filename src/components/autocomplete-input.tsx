@@ -13,7 +13,7 @@ export function AutocompleteInput({
   options,
   placeholder,
   required = false,
-  sectionLabel = 'Vorschlaege',
+  sectionLabel = 'Vorschläge',
   emptyStateText = 'Keine Treffer gefunden.',
   helperText,
   createHint,
@@ -124,7 +124,7 @@ export function AutocompleteInput({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setIsMenuOpen((open) => !open)}
         className="absolute right-3 top-[2.6rem] inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-        aria-label={`${label} Vorschlaege anzeigen`}
+        aria-label={`${label} Vorschläge anzeigen`}
       >
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
           <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.7a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" />

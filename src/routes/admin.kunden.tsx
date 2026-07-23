@@ -83,7 +83,7 @@ function AdminKundenPage() {
     const company = companies.find((item) => item.id === companyId)
     if (!company) return
 
-    if (!window.confirm(`Kunde ${company.shortCode} wirklich loeschen?`)) {
+    if (!window.confirm(`Kunde ${company.shortCode} wirklich löschen?`)) {
       return
     }
 
@@ -95,20 +95,20 @@ function AdminKundenPage() {
 
     if (editingCompanyId === companyId) cancelEdit()
 
-    editForm.setMessage(`Kunde ${company.shortCode} wurde geloescht.`, 'success')
+    editForm.setMessage(`Kunde ${company.shortCode} wurde gelöscht.`, 'success')
   }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Kunden</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Kunden koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
+        Kunden können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
       <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-6">
         <div>
           <CompanyInput
-            label="Kuerzel"
+            label="Kürzel"
             value={createForm.formState.shortCode}
             onChange={(val) => createForm.update({ shortCode: val.toUpperCase().slice(0, 6) })}
             placeholder="z.B. KR"
@@ -151,10 +151,10 @@ function AdminKundenPage() {
 
         <div className="md:col-span-3">
           <CompanyInput
-            label="Strasse"
+            label="Straße"
             value={createForm.formState.street}
             onChange={(val) => createForm.update({ street: val })}
-            placeholder="z.B. Bastian-Gugel-Strasse 11"
+            placeholder="z.B. Bastian-Gugel-Straße 11"
           />
         </div>
 
@@ -172,7 +172,7 @@ function AdminKundenPage() {
             label="Ort"
             value={createForm.formState.city}
             onChange={(val) => createForm.update({ city: val })}
-            placeholder="z.B. Buehl"
+            placeholder="z.B. Bühl"
           />
         </div>
 
@@ -194,7 +194,7 @@ function AdminKundenPage() {
       <div className="mt-5 space-y-3 md:hidden">
         {companies.map((company) => (
           <article key={company.id} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500">Kuerzel</p>
+            <p className="text-xs text-slate-500">Kürzel</p>
             {editingCompanyId === company.id ? (
               <input
                 value={editForm.formState.shortCode}
@@ -230,13 +230,13 @@ function AdminKundenPage() {
               <p className="text-sm text-slate-800">{company.customerNumber || '—'}</p>
             )}
 
-            <p className="mt-3 text-xs text-slate-500">Strasse</p>
+            <p className="mt-3 text-xs text-slate-500">Straße</p>
             {editingCompanyId === company.id ? (
               <input
                 value={editForm.formState.street}
                 onChange={(event) => editForm.update({ street: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                placeholder="z.B. Bastian-Gugel-Strasse 11"
+                placeholder="z.B. Bastian-Gugel-Straße 11"
               />
             ) : (
               <p className="text-sm text-slate-800">{company.street || '—'}</p>
@@ -262,7 +262,7 @@ function AdminKundenPage() {
                 value={editForm.formState.city}
                 onChange={(event) => editForm.update({ city: event.target.value })}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                placeholder="z.B. Buehl"
+                placeholder="z.B. Bühl"
               />
             ) : (
               <p className="text-sm text-slate-800">{company.city || '—'}</p>
@@ -330,7 +330,7 @@ function AdminKundenPage() {
                     onClick={() => removeCompany(company.id)}
                     className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                   >
-                    Loeschen
+                    Löschen
                   </button>
                 </>
               )}
@@ -343,10 +343,10 @@ function AdminKundenPage() {
         <table className="w-full min-w-2xl table-fixed border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="w-20 px-3 py-2">Kuerzel</th>
+              <th className="w-20 px-3 py-2">Kürzel</th>
               <th className="w-[20%] px-3 py-2">Kundenname</th>
               <th className="w-28 px-3 py-2">Kd.-Nr.</th>
-              <th className="w-40 px-3 py-2">Strasse</th>
+              <th className="w-40 px-3 py-2">Straße</th>
               <th className="w-20 px-3 py-2">PLZ</th>
               <th className="w-28 px-3 py-2">Ort</th>
               <th className="w-20 px-3 py-2">PIN</th>
@@ -489,7 +489,7 @@ function AdminKundenPage() {
                           onClick={() => removeCompany(company.id)}
                           className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
                         >
-                          Loeschen
+                          Löschen
                         </button>
                       </>
                     )}

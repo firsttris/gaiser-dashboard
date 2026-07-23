@@ -110,13 +110,13 @@ function AdminNeuerVorgangPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-title text-4xl text-slate-900">Neuer Vorgang</h2>
-            <p className="mt-1 text-sm text-slate-600">Lege fuer einen Kunden einen neuen Vorgang an.</p>
+            <p className="mt-1 text-sm text-slate-600">Lege für einen Kunden einen neuen Vorgang an.</p>
           </div>
           <Link
             to="/admin/vorgaenge"
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
           >
-            Zurueck zu Vorgaengen
+            Zurück zu Vorgängen
           </Link>
         </div>
 
@@ -127,7 +127,7 @@ function AdminNeuerVorgangPage() {
             onChange={(e) => setCompanyId(e.target.value)}
             className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-slate-800 sm:max-w-sm"
           >
-            <option value="">Bitte Kunde auswaehlen</option>
+            <option value="">Bitte Kunde auswählen</option>
             {sortedCompanies.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}

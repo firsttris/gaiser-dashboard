@@ -112,7 +112,7 @@ export function DocumentListTable({
                       checked={areAllSelected ?? false}
                       onChange={(e) => onSelectAll(e.target.checked)}
                       className="h-4 w-4 rounded border-slate-300"
-                      aria-label="Alle sichtbaren Eintraege markieren"
+                      aria-label="Alle sichtbaren Einträge markieren"
                     />
                   )}
                 </th>

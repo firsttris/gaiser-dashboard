@@ -117,11 +117,11 @@ function AdminVorgaengePage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-title text-4xl text-slate-900">Vorgänge</h2>
-            <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgaenge ueber alle Firmen.</p>
+            <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgänge über alle Firmen.</p>
           </div>
           <div className="flex items-center gap-3">
             <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
-              {filteredRecords.length} von {records.length} Eintraegen
+              {filteredRecords.length} von {records.length} Einträgen
             </p>
             <Link
               to="/admin/neuer-vorgang"
@@ -135,11 +135,11 @@ function AdminVorgaengePage() {
         <SelectionActionBar
           count={selectedCount}
           noun="Eintrag"
-          pluralSuffix="e"
+          pluralLabel="Einträge"
           total={selectedTotal}
           warning={
             selectedAllOpenLieferschein && selectedCompanies.length > 1
-              ? 'Rechnung ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'
+              ? 'Rechnung ist nur möglich, wenn alle markierten Einträge zur gleichen Firma gehören.'
               : undefined
           }
           onClear={clearSelection}
@@ -154,7 +154,7 @@ function AdminVorgaengePage() {
               onClick: () => setPendingAction({
                 action: stornoSelection,
                 title: 'Lieferscheine stornieren',
-                message: `Sind Sie sicher, dass Sie ${selectedRecords.length} Eintrag${selectedRecords.length !== 1 ? 'e' : ''} stornieren möchten?`,
+                message: `Sind Sie sicher, dass Sie ${selectedRecords.length} ${selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} stornieren möchten?`,
               }),
             },
             {
@@ -223,7 +223,7 @@ function AdminVorgaengePage() {
 
         {filteredRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-            Keine Eintraege fuer die aktuellen Filter vorhanden.
+            Keine Einträge für die aktuellen Filter vorhanden.
           </p>
         ) : (
           <HistoryTable
@@ -251,7 +251,7 @@ function AdminVorgaengePage() {
           >
             <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
             <p className="mt-2 text-sm text-slate-600">
-              {selectedRecords.length} Eintrag{selectedRecords.length !== 1 ? 'e' : ''} fuer {selectedCompanies[0]} · {money(selectedTotal)}
+              {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedCompanies[0]} · {money(selectedTotal)}
             </p>
             <label className="mt-4 flex cursor-pointer items-center gap-3">
               <input
@@ -264,7 +264,7 @@ function AdminVorgaengePage() {
             </label>
             {sammelReverseCharge && (
               <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfaengers wird auf der Rechnung ergaenzt.
+                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfängers wird auf der Rechnung ergänzt.
               </p>
             )}
             <div className="mt-5 flex justify-end gap-3">

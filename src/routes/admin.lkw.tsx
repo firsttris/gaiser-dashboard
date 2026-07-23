@@ -91,7 +91,7 @@ function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, on
                   onClick={() => onRemove(truck.id)}
                   className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                 >
-                  Loeschen
+                  Löschen
                 </button>
               </>
             )}
@@ -175,7 +175,7 @@ function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, on
                         onClick={() => onRemove(truck.id)}
                         className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
                       >
-                        Loeschen
+                        Löschen
                       </button>
                     </>
                   )}
@@ -254,7 +254,7 @@ function AdminTrucksPage() {
     const truck = trucks.find((item) => item.id === truckId)
     if (!truck) return
 
-    if (!window.confirm(`LKW ${truck.name} wirklich loeschen?`)) {
+    if (!window.confirm(`LKW ${truck.name} wirklich löschen?`)) {
       return
     }
 
@@ -266,7 +266,7 @@ function AdminTrucksPage() {
 
     if (editingTruckId === truckId) cancelEdit()
 
-    editForm.setMessage(`LKW ${truck.name} wurde geloescht.`, 'success')
+    editForm.setMessage(`LKW ${truck.name} wurde gelöscht.`, 'success')
   }
 
   const listProps = {
@@ -287,7 +287,7 @@ function AdminTrucksPage() {
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">LKW</h2>
       <p className="mt-2 text-sm text-slate-600">
-        LKW-Stundenpreise koennen hier angelegt, bearbeitet und bei fehlender Historie geloescht werden.
+        LKW-Stundenpreise können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
       <form onSubmit={submitTruck} className="mt-4 grid gap-4 md:grid-cols-6">

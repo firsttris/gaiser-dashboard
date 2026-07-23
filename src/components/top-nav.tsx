@@ -33,7 +33,7 @@ export function TopNav() {
               type="button"
               onClick={() => setIsMenuOpen((open) => !open)}
               className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
-              aria-label={isMenuOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
+              aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
               aria-expanded={isMenuOpen}
             >
               {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.15} /> : <Menu className="h-5 w-5" strokeWidth={2.15} />}
