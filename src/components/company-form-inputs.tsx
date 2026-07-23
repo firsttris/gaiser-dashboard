@@ -13,20 +13,6 @@ export function CompanyInput({
   placeholder: string
   variant?: 'default' | 'compact'
 }) {
-  let processedValue = value
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let newValue = e.target.value
-
-    // Auto-formatting based on variant
-    if (variant === 'compact') {
-      // shortCode: uppercase, max 6 chars
-      newValue = newValue.toUpperCase().slice(0, 6)
-    }
-
-    onChange(newValue)
-  }
-
   const sizes = variant === 'compact' ? 'px-3 py-2' : 'px-4 py-3'
   const borderStyle = variant === 'compact' ? 'rounded-lg' : 'rounded-xl'
 
@@ -35,7 +21,7 @@ export function CompanyInput({
       <label className="text-sm font-semibold text-slate-700">{label}</label>
       <input
         value={value}
-        onChange={handleChange}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className={`mt-2 w-full border border-slate-300 ${borderStyle} ${sizes} outline-none focus:border-slate-800`}
       />

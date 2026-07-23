@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { type PriceCategory } from '../state/app-state'
 
 interface CompanyFormState {
-  shortCode: string
   name: string
   customerNumber: string
   street: string
@@ -13,7 +12,6 @@ interface CompanyFormState {
 }
 
 const INITIAL_STATE: CompanyFormState = {
-  shortCode: '',
   name: '',
   customerNumber: '',
   street: '',

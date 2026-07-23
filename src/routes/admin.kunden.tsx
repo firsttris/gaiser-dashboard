@@ -16,7 +16,6 @@ function AdminKundenPage() {
     event.preventDefault()
 
     const result = createCompany({
-      shortCode: createForm.formState.shortCode,
       name: createForm.formState.name,
       customerNumber: createForm.formState.customerNumber,
       street: createForm.formState.street,
@@ -31,7 +30,7 @@ function AdminKundenPage() {
       return
     }
 
-    createForm.setMessage(`Kunde ${createForm.formState.shortCode.trim().toUpperCase()} wurde angelegt.`, 'success')
+    createForm.setMessage(`Kunde ${createForm.formState.name.trim()} wurde angelegt.`, 'success')
     createForm.reset()
   }
 
@@ -46,7 +45,6 @@ function AdminKundenPage() {
 
     setEditingCompanyId(company.id)
     editForm.update({
-      shortCode: company.shortCode,
       name: company.name,
       customerNumber: company.customerNumber,
       street: company.street,
@@ -60,7 +58,6 @@ function AdminKundenPage() {
   function saveEditedCompany(companyId: string) {
     const result = updateCompany({
       id: companyId,
-      shortCode: editForm.formState.shortCode,
       name: editForm.formState.name,
       customerNumber: editForm.formState.customerNumber,
       street: editForm.formState.street,
@@ -75,7 +72,7 @@ function AdminKundenPage() {
       return
     }
 
-    editForm.setMessage(`Kunde ${editForm.formState.shortCode.trim().toUpperCase()} wurde aktualisiert.`, 'success')
+    editForm.setMessage(`Kunde ${editForm.formState.name.trim()} wurde aktualisiert.`, 'success')
     cancelEdit()
   }
 
@@ -83,7 +80,7 @@ function AdminKundenPage() {
     const company = companies.find((item) => item.id === companyId)
     if (!company) return
 
-    if (!window.confirm(`Kunde ${company.shortCode} wirklich löschen?`)) {
+    if (!window.confirm(`Kunde ${company.name} wirklich löschen?`)) {
       return
     }
 
@@ -95,7 +92,7 @@ function AdminKundenPage() {
 
     if (editingCompanyId === companyId) cancelEdit()
 
-    editForm.setMessage(`Kunde ${company.shortCode} wurde gelöscht.`, 'success')
+    editForm.setMessage(`Kunde ${company.name} wurde gelöscht.`, 'success')
   }
 
   return (
@@ -106,15 +103,6 @@ function AdminKundenPage() {
       </p>
 
       <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-6">
-        <div>
-          <CompanyInput
-            label="Kürzel"
-            value={createForm.formState.shortCode}
-            onChange={(val) => createForm.update({ shortCode: val.toUpperCase().slice(0, 6) })}
-            placeholder="z.B. KR"
-          />
-        </div>
-
         <div className="md:col-span-2">
           <CompanyInput
             label="Kundenname"
@@ -194,20 +182,7 @@ function AdminKundenPage() {
       <div className="mt-5 space-y-3 md:hidden">
         {companies.map((company) => (
           <article key={company.id} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500">Kürzel</p>
-            {editingCompanyId === company.id ? (
-              <input
-                value={editForm.formState.shortCode}
-                onChange={(event) =>
-                  editForm.update({ shortCode: event.target.value.toUpperCase().slice(0, 6) })
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            ) : (
-              <p className="text-sm font-semibold text-slate-900">{company.shortCode}</p>
-            )}
-
-            <p className="mt-3 text-xs text-slate-500">Kundenname</p>
+            <p className="text-xs text-slate-500">Kundenname</p>
             {editingCompanyId === company.id ? (
               <input
                 value={editForm.formState.name}
@@ -343,7 +318,6 @@ function AdminKundenPage() {
         <table className="w-full min-w-2xl table-fixed border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="w-20 px-3 py-2">Kürzel</th>
               <th className="w-[20%] px-3 py-2">Kundenname</th>
               <th className="w-28 px-3 py-2">Kd.-Nr.</th>
               <th className="w-40 px-3 py-2">Straße</th>
@@ -357,19 +331,6 @@ function AdminKundenPage() {
           <tbody>
             {companies.map((company) => (
               <tr key={company.id} className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
-                <td className="px-3 py-2">
-                  {editingCompanyId === company.id ? (
-                    <input
-                      value={editForm.formState.shortCode}
-                      onChange={(event) =>
-                        editForm.update({ shortCode: event.target.value.toUpperCase().slice(0, 6) })
-                      }
-                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
-                    />
-                  ) : (
-                    <p className="flex h-10 items-center font-semibold text-slate-800">{company.shortCode}</p>
-                  )}
-                </td>
                 <td className="px-3 py-2">
                   {editingCompanyId === company.id ? (
                     <input

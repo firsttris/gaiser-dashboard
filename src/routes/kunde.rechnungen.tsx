@@ -10,7 +10,7 @@ import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
+import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
 export const Route = createFileRoute('/kunde/rechnungen')({ component: RechnungenPage })
 
@@ -37,7 +37,7 @@ function RechnungenPage() {
     if (selectedGroups.length === 0) return
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), false)
     const stamp = new Date().toISOString().slice(0, 10)
-    const company = selectedCompany?.shortCode?.toLowerCase() ?? 'kunde'
+    const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
   }
 

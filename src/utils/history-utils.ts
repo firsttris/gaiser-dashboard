@@ -116,6 +116,15 @@ export function csvCell(value: string | number) {
   return `"${text}"`
 }
 
+export function companyFilenameSegment(companyName?: string) {
+  return (
+    companyName
+      ?.toLocaleLowerCase('de-DE')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '') || 'kunde'
+  )
+}
+
 export function downloadCsvFile(filename: string, content: string) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

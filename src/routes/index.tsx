@@ -24,13 +24,9 @@ function App() {
 
   const results = useMemo(() => {
     const value = query.trim().toLowerCase()
-    if (!value) return []
+    if (value.length < 2) return []
 
-    return companies.filter(
-      (company) =>
-        company.shortCode.toLowerCase().includes(value) ||
-        company.name.toLowerCase().includes(value),
-    )
+    return companies.filter((company) => company.name.toLowerCase().includes(value))
   }, [companies, query])
 
   function submitLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -69,24 +65,24 @@ function App() {
             </p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold">Demo-Hinweis</p>
-              <p>Beispiel: KR für Krampfert Wohnbau GmbH, PIN 1234.</p>
+              <p>Beispiel: Krampfert Wohnbau GmbH, PIN 1234.</p>
             </div>
           </div>
 
           <form onSubmit={submitLogin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
             <div className="relative">
-              <label className="text-sm font-semibold text-slate-700">Firma / Kürzel</label>
+              <label className="text-sm font-semibold text-slate-700">Firma</label>
               <input
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value)
                   setSelectedCompanyId(null)
                 }}
-                placeholder="z.B. KR oder Krampfert Wohnbau GmbH"
+                placeholder="z.B. Krampfert Wohnbau GmbH"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-amber-500"
               />
 
-              {results.length > 0 && (
+              {selectedCompanyId === null && results.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 space-y-1 overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
                   {results.map((company) => (
                     <button
@@ -94,7 +90,7 @@ function App() {
                       key={company.id}
                       onClick={() => {
                         setSelectedCompanyId(company.id)
-                        setQuery(`${company.shortCode} - ${company.name}`)
+                        setQuery(company.name)
                       }}
                       className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
                         selectedCompanyId === company.id
@@ -102,7 +98,7 @@ function App() {
                           : 'bg-white text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="font-semibold">{company.shortCode}</span> {company.name}
+                      <span className="font-semibold">{company.name}</span>
                     </button>
                   ))}
                 </div>
@@ -137,7 +133,7 @@ function App() {
                 Zum Admin-Bereich
               </Link>
             </div>
-            <p className="text-sm text-slate-500">Beispiel: KR für Krampfert Wohnbau GmbH, PIN 1234.</p>
+            <p className="text-sm text-slate-500">Beispiel: Krampfert Wohnbau GmbH, PIN 1234.</p>
           </form>
         </div>
       </section>

@@ -6,7 +6,7 @@ import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
+import { companyFilenameSegment, createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { SelectionActionBar } from '../components/selection-action-bar'
 
@@ -76,7 +76,7 @@ function HistoryPage() {
 
     const csv = createHistoryCsv(selectedRecords, false)
     const stamp = new Date().toISOString().slice(0, 10)
-    const company = selectedCompany?.shortCode?.toLowerCase() ?? 'kunde'
+    const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`history-${company}-${stamp}.csv`, csv)
   }
 

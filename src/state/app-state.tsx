@@ -7,7 +7,6 @@ export type PriceCategory = 'private' | 'business'
 
 export type Company = {
   id: string
-  shortCode: string
   name: string
   customerNumber: string
   street: string
@@ -88,7 +87,6 @@ type CreateTruckRecordInput = {
 }
 
 type CreateCompanyInput = {
-  shortCode: string
   name: string
   customerNumber: string
   street: string
@@ -108,7 +106,6 @@ type CreateProductInput = {
 
 type UpdateCompanyInput = {
   id: string
-  shortCode: string
   name: string
   customerNumber: string
   street: string
@@ -205,10 +202,10 @@ type AppState = {
 }
 
 const companiesSeed: Company[] = [
-  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', customerNumber: '', street: '', postalCode: '', city: '', pin: '1234', priceCategory: 'business' },
-  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2468', priceCategory: 'business' },
-  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', customerNumber: '', street: '', postalCode: '', city: '', pin: '7777', priceCategory: 'business' },
-  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2222', priceCategory: 'business' },
+  { id: 'kr', name: 'Krampfert Wohnbau GmbH', customerNumber: '', street: '', postalCode: '', city: '', pin: '1234', priceCategory: 'business' },
+  { id: 'be', name: 'Bergbau Erden AG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2468', priceCategory: 'business' },
+  { id: 'no', name: 'Nordstein Bau', customerNumber: '', street: '', postalCode: '', city: '', pin: '7777', priceCategory: 'business' },
+  { id: 'wa', name: 'Walter Tiefbau KG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2222', priceCategory: 'business' },
 ]
 
 const productsSeed: Product[] = [
@@ -698,27 +695,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setRecords((prev) => [nextRecord, ...prev])
         return nextRecord
       },
-      createCompany: ({ shortCode, name, customerNumber, street, postalCode, city, pin, priceCategory }: CreateCompanyInput) => {
-        const cleanedShortCode = shortCode.trim().toUpperCase()
+      createCompany: ({ name, customerNumber, street, postalCode, city, pin, priceCategory }: CreateCompanyInput) => {
         const cleanedName = name.trim()
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
-        if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname und Kürzel ausfüllen.' }
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte Kundenname ausfüllen.' }
         }
 
         if (cleanedPin.length !== 4) {
           return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
         }
 
-        const hasShortCode = companies.some((company) => company.shortCode === cleanedShortCode)
-        if (hasShortCode) {
-          return { ok: false, message: 'Das Kundenkürzel ist bereits vergeben.' }
+        const hasName = companies.some((company) => company.name.toLowerCase() === cleanedName.toLowerCase())
+        if (hasName) {
+          return { ok: false, message: 'Der Kundenname ist bereits vergeben.' }
         }
 
         const company: Company = {
-          id: `${cleanedShortCode.toLowerCase()}-${Date.now()}`,
-          shortCode: cleanedShortCode,
+          id: `${cleanedName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
           name: cleanedName,
           customerNumber: customerNumber.trim(),
           street: street.trim(),
@@ -731,34 +726,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCompanies((prev) => [...prev, company])
         return { ok: true }
       },
-      updateCompany: ({ id, shortCode, name, customerNumber, street, postalCode, city, pin, priceCategory }: UpdateCompanyInput) => {
+      updateCompany: ({ id, name, customerNumber, street, postalCode, city, pin, priceCategory }: UpdateCompanyInput) => {
         const company = companies.find((item) => item.id === id)
         if (!company) {
           return { ok: false, message: 'Der Kunde wurde nicht gefunden.' }
         }
 
-        const cleanedShortCode = shortCode.trim().toUpperCase()
         const cleanedName = name.trim()
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
-        if (!cleanedShortCode || !cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname und Kürzel ausfüllen.' }
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte Kundenname ausfüllen.' }
         }
 
         if (cleanedPin.length !== 4) {
           return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
         }
 
-        const hasShortCode = companies.some(
-          (item) => item.id !== id && item.shortCode.toUpperCase() === cleanedShortCode,
+        const hasName = companies.some(
+          (item) => item.id !== id && item.name.toLowerCase() === cleanedName.toLowerCase(),
         )
-        if (hasShortCode) {
-          return { ok: false, message: 'Das Kundenkürzel ist bereits vergeben.' }
+        if (hasName) {
+          return { ok: false, message: 'Der Kundenname ist bereits vergeben.' }
         }
 
         const updatedCompany: Company = {
           id,
-          shortCode: cleanedShortCode,
           name: cleanedName,
           customerNumber: customerNumber.trim(),
           street: street.trim(),
