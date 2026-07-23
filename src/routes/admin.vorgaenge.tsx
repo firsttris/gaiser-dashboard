@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
@@ -10,7 +11,13 @@ import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRang
 import { createHistoryCsv, downloadCsvFile, money, statusLabel } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 
-export const Route = createFileRoute('/admin/vorgaenge')({ component: AdminVorgaengePage })
+export const Route = createFileRoute('/admin/vorgaenge')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminVorgaengePage,
+})
 
 function AdminVorgaengePage() {
   const { companies, records, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
@@ -84,7 +91,7 @@ function AdminVorgaengePage() {
     if (!canCreateInvoice) return
     const deliveryNoteRefs = selectedRecords.map((r) => r.deliveryNoteId).filter(Boolean).join(', ')
     const customer = companies.find((c) => c.name === selectedCompanies[0])
-    const invoiceNo = generateInvoiceNumber()
+    const invoiceNo = await generateInvoiceNumber()
     await downloadInvoicePdf(selectedRecords, customer, deliveryNoteRefs, invoiceNo, isReverseCharge)
     selectedRecords.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
     assignInvoice(selectedRecords.map((r) => r.id), invoiceNo, isReverseCharge)

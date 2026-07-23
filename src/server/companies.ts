@@ -1,0 +1,207 @@
+import { createServerFn } from '@tanstack/react-start'
+import { queryOptions } from '@tanstack/react-query'
+import { z } from 'zod'
+import bcrypt from 'bcryptjs'
+import { supabaseBrowser } from '#/lib/supabase/browser-client'
+import { requireAdminSession } from './middleware/require-admin-session'
+
+const PIN_HASH_ROUNDS = 12
+
+const priceCategorySchema = z.enum(['private', 'business'])
+
+const createCompanySchema = z.object({
+  shortCode: z.string().min(1),
+  name: z.string().min(1),
+  customerNumber: z.string(),
+  street: z.string(),
+  postalCode: z.string(),
+  city: z.string(),
+  pin: z.string().regex(/^\d{4}$/),
+  priceCategory: priceCategorySchema,
+})
+
+const updateCompanySchema = z.object({
+  id: z.string().uuid(),
+  shortCode: z.string().min(1),
+  name: z.string().min(1),
+  customerNumber: z.string(),
+  street: z.string(),
+  postalCode: z.string(),
+  city: z.string(),
+  priceCategory: priceCategorySchema,
+})
+
+const setCompanyPinSchema = z.object({
+  companyId: z.string().uuid(),
+  pin: z.string().regex(/^\d{4}$/),
+})
+
+const deleteCompanySchema = z.object({ id: z.string().uuid() })
+
+function toCompany(row: {
+  id: string
+  short_code: string
+  name: string
+  customer_number: string
+  street: string
+  postal_code: string
+  city: string
+  price_category: 'private' | 'business'
+}) {
+  return {
+    id: row.id,
+    shortCode: row.short_code,
+    name: row.name,
+    customerNumber: row.customer_number,
+    street: row.street,
+    postalCode: row.postal_code,
+    city: row.city,
+    priceCategory: row.price_category,
+  }
+}
+
+export const adminListCompanies = createServerFn({ method: 'GET' })
+  .middleware([requireAdminSession])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from('companies')
+      .select('id, short_code, name, customer_number, street, postal_code, city, price_category')
+      .order('name', { ascending: true })
+
+    if (error || !data) return []
+    return data.map(toCompany)
+  })
+
+export const adminCreateCompany = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => createCompanySchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const shortCode = data.shortCode.trim().toUpperCase()
+    const name = data.name.trim()
+
+    const { data: existing } = await context.supabase
+      .from('companies')
+      .select('id')
+      .ilike('short_code', shortCode)
+      .maybeSingle()
+
+    if (existing) {
+      return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' } as const
+    }
+
+    const pinHash = await bcrypt.hash(data.pin, PIN_HASH_ROUNDS)
+
+    const { error } = await context.supabase.from('companies').insert({
+      short_code: shortCode,
+      name,
+      customer_number: data.customerNumber.trim(),
+      street: data.street.trim(),
+      postal_code: data.postalCode.trim(),
+      city: data.city.trim(),
+      price_category: data.priceCategory,
+      pin_hash: pinHash,
+    })
+
+    if (error) {
+      return { ok: false, message: 'Der Kunde konnte nicht angelegt werden.' } as const
+    }
+
+    return { ok: true } as const
+  })
+
+export const adminUpdateCompany = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => updateCompanySchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const shortCode = data.shortCode.trim().toUpperCase()
+    const name = data.name.trim()
+
+    const { data: existing } = await context.supabase
+      .from('companies')
+      .select('id')
+      .ilike('short_code', shortCode)
+      .neq('id', data.id)
+      .maybeSingle()
+
+    if (existing) {
+      return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' } as const
+    }
+
+    const { error } = await context.supabase
+      .from('companies')
+      .update({
+        short_code: shortCode,
+        name,
+        customer_number: data.customerNumber.trim(),
+        street: data.street.trim(),
+        postal_code: data.postalCode.trim(),
+        city: data.city.trim(),
+        price_category: data.priceCategory,
+      })
+      .eq('id', data.id)
+
+    if (error) {
+      return { ok: false, message: 'Der Kunde konnte nicht aktualisiert werden.' } as const
+    }
+
+    return { ok: true } as const
+  })
+
+export const adminSetCompanyPin = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => setCompanyPinSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const pinHash = await bcrypt.hash(data.pin, PIN_HASH_ROUNDS)
+
+    const { error } = await context.supabase
+      .from('companies')
+      .update({ pin_hash: pinHash, failed_pin_attempts: 0, pin_locked_until: null })
+      .eq('id', data.companyId)
+
+    if (error) {
+      return { ok: false, message: 'Die PIN konnte nicht geaendert werden.' } as const
+    }
+
+    return { ok: true } as const
+  })
+
+export const adminDeleteCompany = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => deleteCompanySchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from('companies').delete().eq('id', data.id)
+
+    if (error) {
+      return { ok: false, message: 'Die Firma konnte nicht geloescht werden.' } as const
+    }
+
+    return { ok: true } as const
+  })
+
+export const adminCompaniesQueryOptions = () =>
+  queryOptions({
+    queryKey: ['companies', 'admin'] as const,
+    queryFn: () => adminListCompanies(),
+  })
+
+// Pre-login search box only ever needs id/shortCode/name — the other Company
+// fields are filled with empty placeholders so this still matches the shape
+// consumed elsewhere in the app.
+export const publicCompaniesQueryOptions = () =>
+  queryOptions({
+    queryKey: ['companies', 'public'] as const,
+    queryFn: async () => {
+      const { data, error } = await supabaseBrowser.from('companies_public').select('id, short_code, name')
+      if (error || !data) return []
+      return data.map((row) => ({
+        id: row.id,
+        shortCode: row.short_code,
+        name: row.name,
+        customerNumber: '',
+        street: '',
+        postalCode: '',
+        city: '',
+        priceCategory: 'business' as const,
+      }))
+    },
+  })

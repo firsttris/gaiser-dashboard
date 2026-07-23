@@ -1,11 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 import { useTruckForm } from '../hooks/use-truck-form'
 import { ProductNameInput, PriceField } from '../components/product-form-inputs'
 import type { Truck } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/lkw')({ component: AdminTrucksPage })
+export const Route = createFileRoute('/admin/lkw')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminTrucksPage,
+})
 
 type EditFormState = {
   name: string
@@ -195,10 +202,10 @@ function AdminTrucksPage() {
   const editForm = useTruckForm()
   const [editingTruckId, setEditingTruckId] = useState<number | null>(null)
 
-  function submitTruck(event: React.FormEvent<HTMLFormElement>) {
+  async function submitTruck(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = createTruck({
+    const result = await createTruck({
       name: createForm.formState.name,
       privatePrice: createForm.formState.privatePrice,
       businessPrice: createForm.formState.businessPrice,
@@ -230,11 +237,11 @@ function AdminTrucksPage() {
     })
   }
 
-  function saveEditedTruck(truckId: number) {
+  async function saveEditedTruck(truckId: number) {
     const truck = trucks.find((item) => item.id === truckId)
     if (!truck) return
 
-    const result = updateTruck({
+    const result = await updateTruck({
       id: truck.id,
       name: editForm.formState.name,
       privatePrice: editForm.formState.privatePrice,
@@ -250,7 +257,7 @@ function AdminTrucksPage() {
     cancelEdit()
   }
 
-  function removeTruck(truckId: number) {
+  async function removeTruck(truckId: number) {
     const truck = trucks.find((item) => item.id === truckId)
     if (!truck) return
 
@@ -258,7 +265,7 @@ function AdminTrucksPage() {
       return
     }
 
-    const result = deleteTruck({ id: truckId })
+    const result = await deleteTruck({ id: truckId })
     if (!result.ok) {
       editForm.setMessage(result.message, 'error')
       return

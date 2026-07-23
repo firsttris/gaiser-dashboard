@@ -1,11 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 import { useProductForm } from '../hooks/use-product-form'
 import { ProductNameInput, ProductUnitInput, ProductFlowSelect, PriceField } from '../components/product-form-inputs'
 import type { Product } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/material')({ component: AdminProductsPage })
+export const Route = createFileRoute('/admin/material')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminProductsPage,
+})
 
 type EditFormState = {
   name: string
@@ -232,10 +239,10 @@ function AdminProductsPage() {
   const dropoffProducts = products.filter((product) => product.flow === 'dropoff')
   const pickupProducts = products.filter((product) => product.flow === 'pickup')
 
-  function submitProduct(event: React.FormEvent<HTMLFormElement>) {
+  async function submitProduct(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = createProduct({
+    const result = await createProduct({
       name: createForm.formState.name,
       unit: createForm.formState.unit,
       flow: createForm.formState.flow,
@@ -271,11 +278,11 @@ function AdminProductsPage() {
     })
   }
 
-  function saveEditedProduct(productId: number) {
+  async function saveEditedProduct(productId: number) {
     const product = products.find((item) => item.id === productId)
     if (!product) return
 
-    const result = updateProduct({
+    const result = await updateProduct({
       id: product.id,
       name: editForm.formState.name,
       unit: editForm.formState.unit,
@@ -293,7 +300,7 @@ function AdminProductsPage() {
     cancelEdit()
   }
 
-  function removeProduct(productId: number) {
+  async function removeProduct(productId: number) {
     const product = products.find((item) => item.id === productId)
     if (!product) return
 
@@ -301,7 +308,7 @@ function AdminProductsPage() {
       return
     }
 
-    const result = deleteProduct({ id: productId })
+    const result = await deleteProduct({ id: productId })
     if (!result.ok) {
       editForm.setMessage(result.message, 'error')
       return

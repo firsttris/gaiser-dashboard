@@ -1,8 +1,15 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
+import { useEffect, useState } from 'react'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/einstellungen')({ component: AdminEinstellungenPage })
+export const Route = createFileRoute('/admin/einstellungen')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminEinstellungenPage,
+})
 
 const TOKEN_HINTS = [
   { token: '{JAHR}', description: 'Jahr, 4-stellig (z.B. 2026)' },
@@ -21,14 +28,25 @@ function AdminEinstellungenPage() {
   const [numberPadding, setNumberPadding] = useState(String(numberingSettings.numberPadding))
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
+  // numberingSettings loads asynchronously (Supabase query) after this
+  // component's initial useState already ran with the placeholder default —
+  // resync the form once the real values arrive.
+  useEffect(() => {
+    setInvoiceTemplate(numberingSettings.invoiceTemplate)
+    setDeliveryNoteTemplate(numberingSettings.deliveryNoteTemplate)
+    setNextInvoiceNumber(String(numberingSettings.nextInvoiceNumber))
+    setNextDeliveryNoteNumber(String(numberingSettings.nextDeliveryNoteNumber))
+    setNumberPadding(String(numberingSettings.numberPadding))
+  }, [numberingSettings])
+
   const paddingValue = Math.max(Number(numberPadding) || 1, 1)
   const invoicePreview = formatGeneratedNumber(invoiceTemplate, Number(nextInvoiceNumber) || 0, paddingValue)
   const deliveryNotePreview = formatGeneratedNumber(deliveryNoteTemplate, Number(nextDeliveryNoteNumber) || 0, paddingValue)
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = updateNumberingSettings({
+    const result = await updateNumberingSettings({
       invoiceTemplate,
       deliveryNoteTemplate,
       nextInvoiceNumber: Math.max(Number(nextInvoiceNumber) || 1, 1),
