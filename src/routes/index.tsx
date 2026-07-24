@@ -133,7 +133,6 @@ function App() {
                 Zum Admin-Bereich
               </Link>
             </div>
-            <p className="text-sm text-slate-500">Beispiel: Krampfert Wohnbau GmbH, PIN 1234.</p>
           </form>
         </div>
       </section>
