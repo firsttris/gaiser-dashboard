@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useAppState } from '../state/app-state'
 import { useCompanyForm } from '../hooks/use-company-form'
 import { CompanyInput, PinInput, PriceCategorySelect } from '../components/company-form-inputs'
@@ -270,12 +271,12 @@ function AdminKundenPage() {
             )}
 
             <p className="mt-3 text-xs text-slate-500">PIN</p>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex items-center gap-2 whitespace-nowrap">
               <p className="text-sm font-semibold text-slate-800">••••</p>
               <button
                 type="button"
                 onClick={() => void resetCompanyPin(company.id)}
-                className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
               >
                 PIN zuruecksetzen
               </button>
@@ -347,9 +348,9 @@ function AdminKundenPage() {
               <th className="w-40 px-3 py-2">Straße</th>
               <th className="w-20 px-3 py-2">PLZ</th>
               <th className="w-28 px-3 py-2">Ort</th>
-              <th className="w-20 px-3 py-2">PIN</th>
+              <th className="w-44 px-3 py-2">PIN</th>
               <th className="w-32 px-3 py-2">Tarifgruppe</th>
-              <th className="w-56 px-3 py-2 text-right">Aktionen</th>
+              <th className="w-44 px-3 py-2 text-right">Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -414,12 +415,12 @@ function AdminKundenPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <div className="flex h-10 items-center gap-2">
+                  <div className="flex h-10 items-center gap-2 whitespace-nowrap">
                     <p>••••</p>
                     <button
                       type="button"
                       onClick={() => void resetCompanyPin(company.id)}
-                      className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                      className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                     >
                       Zuruecksetzen
                     </button>
@@ -440,20 +441,20 @@ function AdminKundenPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <div className="flex w-56 justify-end gap-2">
+                  <div className="flex justify-end gap-2">
                     {editingCompanyId === company.id ? (
                       <>
                         <button
                           type="button"
                           onClick={() => void saveEditedCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                          className="min-w-20 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-black"
                         >
                           Speichern
                         </button>
                         <button
                           type="button"
                           onClick={cancelEdit}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                          className="min-w-20 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                         >
                           Abbrechen
                         </button>
@@ -463,16 +464,20 @@ function AdminKundenPage() {
                         <button
                           type="button"
                           onClick={() => startEditCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                          aria-label="Bearbeiten"
+                          title="Bearbeiten"
+                          className="rounded-lg bg-slate-100 p-2 text-slate-700 hover:bg-slate-200"
                         >
-                          Bearbeiten
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                         <button
                           type="button"
                           onClick={() => void removeCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          aria-label="Löschen"
+                          title="Löschen"
+                          className="rounded-lg bg-red-50 p-2 text-red-700 hover:bg-red-100"
                         >
-                          Löschen
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                       </>
                     )}
