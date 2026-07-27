@@ -9,28 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as KundeRouteImport } from './routes/kunde'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as KundeRouteImport } from './routes/kunde'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
-import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
-import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
-import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
-import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
-import { Route as AdminNeuerVorgangRouteImport } from './routes/admin.neuer-vorgang'
-import { Route as AdminMaterialRouteImport } from './routes/admin.material'
-import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
-import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
-import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
+import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
+import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
+import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
+import { Route as AdminMaterialRouteImport } from './routes/admin.material'
+import { Route as AdminNeuerVorgangRouteImport } from './routes/admin.neuer-vorgang'
+import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
+import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
+import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
+import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
+import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
-import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
 import { Route as KundeNeuerVorgangDropoffRouteImport } from './routes/kunde.neuer-vorgang.dropoff'
+import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
 
-const KundeRoute = KundeRouteImport.update({
-  id: '/kunde',
-  path: '/kunde',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -38,9 +38,9 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const KundeRoute = KundeRouteImport.update({
+  id: '/kunde',
+  path: '/kunde',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -48,49 +48,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const KundeVorgaengeRoute = KundeVorgaengeRouteImport.update({
-  id: '/vorgaenge',
-  path: '/vorgaenge',
-  getParentRoute: () => KundeRoute,
-} as any)
-const KundeRechnungenRoute = KundeRechnungenRouteImport.update({
-  id: '/rechnungen',
-  path: '/rechnungen',
-  getParentRoute: () => KundeRoute,
-} as any)
-const KundeNeuerVorgangRoute = KundeNeuerVorgangRouteImport.update({
-  id: '/neuer-vorgang',
-  path: '/neuer-vorgang',
-  getParentRoute: () => KundeRoute,
-} as any)
-const AdminVorgaengeRoute = AdminVorgaengeRouteImport.update({
-  id: '/vorgaenge',
-  path: '/vorgaenge',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRechnungenRoute = AdminRechnungenRouteImport.update({
-  id: '/rechnungen',
-  path: '/rechnungen',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNeuerVorgangRoute = AdminNeuerVorgangRouteImport.update({
-  id: '/neuer-vorgang',
-  path: '/neuer-vorgang',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMaterialRoute = AdminMaterialRouteImport.update({
-  id: '/material',
-  path: '/material',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLkwRoute = AdminLkwRouteImport.update({
-  id: '/lkw',
-  path: '/lkw',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminKundenRoute = AdminKundenRouteImport.update({
-  id: '/kunden',
-  path: '/kunden',
+const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
+  id: '/baustellen',
+  path: '/baustellen',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
@@ -98,19 +58,54 @@ const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
   path: '/einstellungen',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
-  id: '/baustellen',
-  path: '/baustellen',
+const AdminKundenRoute = AdminKundenRouteImport.update({
+  id: '/kunden',
+  path: '/kunden',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminLkwRoute = AdminLkwRouteImport.update({
+  id: '/lkw',
+  path: '/lkw',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMaterialRoute = AdminMaterialRouteImport.update({
+  id: '/material',
+  path: '/material',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNeuerVorgangRoute = AdminNeuerVorgangRouteImport.update({
+  id: '/neuer-vorgang',
+  path: '/neuer-vorgang',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRechnungenRoute = AdminRechnungenRouteImport.update({
+  id: '/rechnungen',
+  path: '/rechnungen',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminVorgaengeRoute = AdminVorgaengeRouteImport.update({
+  id: '/vorgaenge',
+  path: '/vorgaenge',
+  getParentRoute: () => AdminRoute,
+} as any)
+const KundeNeuerVorgangRoute = KundeNeuerVorgangRouteImport.update({
+  id: '/neuer-vorgang',
+  path: '/neuer-vorgang',
+  getParentRoute: () => KundeRoute,
+} as any)
+const KundeRechnungenRoute = KundeRechnungenRouteImport.update({
+  id: '/rechnungen',
+  path: '/rechnungen',
+  getParentRoute: () => KundeRoute,
+} as any)
+const KundeVorgaengeRoute = KundeVorgaengeRouteImport.update({
+  id: '/vorgaenge',
+  path: '/vorgaenge',
+  getParentRoute: () => KundeRoute,
 } as any)
 const KundeNeuerVorgangIndexRoute = KundeNeuerVorgangIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => KundeNeuerVorgangRoute,
-} as any)
-const KundeNeuerVorgangPickupRoute = KundeNeuerVorgangPickupRouteImport.update({
-  id: '/pickup',
-  path: '/pickup',
   getParentRoute: () => KundeNeuerVorgangRoute,
 } as any)
 const KundeNeuerVorgangDropoffRoute =
@@ -119,6 +114,11 @@ const KundeNeuerVorgangDropoffRoute =
     path: '/dropoff',
     getParentRoute: () => KundeNeuerVorgangRoute,
   } as any)
+const KundeNeuerVorgangPickupRoute = KundeNeuerVorgangPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
+  getParentRoute: () => KundeNeuerVorgangRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -248,11 +248,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/kunde': {
-      id: '/kunde'
-      path: '/kunde'
-      fullPath: '/kunde'
-      preLoaderRoute: typeof KundeRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -262,11 +262,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/kunde': {
+      id: '/kunde'
+      path: '/kunde'
+      fullPath: '/kunde'
+      preLoaderRoute: typeof KundeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -276,67 +276,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/kunde/vorgaenge': {
-      id: '/kunde/vorgaenge'
-      path: '/vorgaenge'
-      fullPath: '/kunde/vorgaenge'
-      preLoaderRoute: typeof KundeVorgaengeRouteImport
-      parentRoute: typeof KundeRoute
-    }
-    '/kunde/rechnungen': {
-      id: '/kunde/rechnungen'
-      path: '/rechnungen'
-      fullPath: '/kunde/rechnungen'
-      preLoaderRoute: typeof KundeRechnungenRouteImport
-      parentRoute: typeof KundeRoute
-    }
-    '/kunde/neuer-vorgang': {
-      id: '/kunde/neuer-vorgang'
-      path: '/neuer-vorgang'
-      fullPath: '/kunde/neuer-vorgang'
-      preLoaderRoute: typeof KundeNeuerVorgangRouteImport
-      parentRoute: typeof KundeRoute
-    }
-    '/admin/vorgaenge': {
-      id: '/admin/vorgaenge'
-      path: '/vorgaenge'
-      fullPath: '/admin/vorgaenge'
-      preLoaderRoute: typeof AdminVorgaengeRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/rechnungen': {
-      id: '/admin/rechnungen'
-      path: '/rechnungen'
-      fullPath: '/admin/rechnungen'
-      preLoaderRoute: typeof AdminRechnungenRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/neuer-vorgang': {
-      id: '/admin/neuer-vorgang'
-      path: '/neuer-vorgang'
-      fullPath: '/admin/neuer-vorgang'
-      preLoaderRoute: typeof AdminNeuerVorgangRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/material': {
-      id: '/admin/material'
-      path: '/material'
-      fullPath: '/admin/material'
-      preLoaderRoute: typeof AdminMaterialRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/lkw': {
-      id: '/admin/lkw'
-      path: '/lkw'
-      fullPath: '/admin/lkw'
-      preLoaderRoute: typeof AdminLkwRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/kunden': {
-      id: '/admin/kunden'
-      path: '/kunden'
-      fullPath: '/admin/kunden'
-      preLoaderRoute: typeof AdminKundenRouteImport
+    '/admin/baustellen': {
+      id: '/admin/baustellen'
+      path: '/baustellen'
+      fullPath: '/admin/baustellen'
+      preLoaderRoute: typeof AdminBaustellenRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/einstellungen': {
@@ -346,12 +290,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEinstellungenRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/baustellen': {
-      id: '/admin/baustellen'
-      path: '/baustellen'
-      fullPath: '/admin/baustellen'
-      preLoaderRoute: typeof AdminBaustellenRouteImport
+    '/admin/kunden': {
+      id: '/admin/kunden'
+      path: '/kunden'
+      fullPath: '/admin/kunden'
+      preLoaderRoute: typeof AdminKundenRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/lkw': {
+      id: '/admin/lkw'
+      path: '/lkw'
+      fullPath: '/admin/lkw'
+      preLoaderRoute: typeof AdminLkwRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/material': {
+      id: '/admin/material'
+      path: '/material'
+      fullPath: '/admin/material'
+      preLoaderRoute: typeof AdminMaterialRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/neuer-vorgang': {
+      id: '/admin/neuer-vorgang'
+      path: '/neuer-vorgang'
+      fullPath: '/admin/neuer-vorgang'
+      preLoaderRoute: typeof AdminNeuerVorgangRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/rechnungen': {
+      id: '/admin/rechnungen'
+      path: '/rechnungen'
+      fullPath: '/admin/rechnungen'
+      preLoaderRoute: typeof AdminRechnungenRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/vorgaenge': {
+      id: '/admin/vorgaenge'
+      path: '/vorgaenge'
+      fullPath: '/admin/vorgaenge'
+      preLoaderRoute: typeof AdminVorgaengeRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/kunde/neuer-vorgang': {
+      id: '/kunde/neuer-vorgang'
+      path: '/neuer-vorgang'
+      fullPath: '/kunde/neuer-vorgang'
+      preLoaderRoute: typeof KundeNeuerVorgangRouteImport
+      parentRoute: typeof KundeRoute
+    }
+    '/kunde/rechnungen': {
+      id: '/kunde/rechnungen'
+      path: '/rechnungen'
+      fullPath: '/kunde/rechnungen'
+      preLoaderRoute: typeof KundeRechnungenRouteImport
+      parentRoute: typeof KundeRoute
+    }
+    '/kunde/vorgaenge': {
+      id: '/kunde/vorgaenge'
+      path: '/vorgaenge'
+      fullPath: '/kunde/vorgaenge'
+      preLoaderRoute: typeof KundeVorgaengeRouteImport
+      parentRoute: typeof KundeRoute
     }
     '/kunde/neuer-vorgang/': {
       id: '/kunde/neuer-vorgang/'
@@ -360,18 +360,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KundeNeuerVorgangIndexRouteImport
       parentRoute: typeof KundeNeuerVorgangRoute
     }
-    '/kunde/neuer-vorgang/pickup': {
-      id: '/kunde/neuer-vorgang/pickup'
-      path: '/pickup'
-      fullPath: '/kunde/neuer-vorgang/pickup'
-      preLoaderRoute: typeof KundeNeuerVorgangPickupRouteImport
-      parentRoute: typeof KundeNeuerVorgangRoute
-    }
     '/kunde/neuer-vorgang/dropoff': {
       id: '/kunde/neuer-vorgang/dropoff'
       path: '/dropoff'
       fullPath: '/kunde/neuer-vorgang/dropoff'
       preLoaderRoute: typeof KundeNeuerVorgangDropoffRouteImport
+      parentRoute: typeof KundeNeuerVorgangRoute
+    }
+    '/kunde/neuer-vorgang/pickup': {
+      id: '/kunde/neuer-vorgang/pickup'
+      path: '/pickup'
+      fullPath: '/kunde/neuer-vorgang/pickup'
+      preLoaderRoute: typeof KundeNeuerVorgangPickupRouteImport
       parentRoute: typeof KundeNeuerVorgangRoute
     }
   }
