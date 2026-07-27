@@ -10,7 +10,6 @@ const PIN_HASH_ROUNDS = 12
 const priceCategorySchema = z.enum(['private', 'business'])
 
 const createCompanySchema = z.object({
-  shortCode: z.string().min(1),
   name: z.string().min(1),
   customerNumber: z.string(),
   street: z.string(),
@@ -22,7 +21,6 @@ const createCompanySchema = z.object({
 
 const updateCompanySchema = z.object({
   id: z.string().uuid(),
-  shortCode: z.string().min(1),
   name: z.string().min(1),
   customerNumber: z.string(),
   street: z.string(),
@@ -40,7 +38,6 @@ const deleteCompanySchema = z.object({ id: z.string().uuid() })
 
 function toCompany(row: {
   id: string
-  short_code: string
   name: string
   customer_number: string
   street: string
@@ -50,7 +47,6 @@ function toCompany(row: {
 }) {
   return {
     id: row.id,
-    shortCode: row.short_code,
     name: row.name,
     customerNumber: row.customer_number,
     street: row.street,
@@ -65,7 +61,7 @@ export const adminListCompanies = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('companies')
-      .select('id, short_code, name, customer_number, street, postal_code, city, price_category')
+      .select('id, name, customer_number, street, postal_code, city, price_category')
       .order('name', { ascending: true })
 
     if (error || !data) return []
@@ -76,23 +72,11 @@ export const adminCreateCompany = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => createCompanySchema.parse(data))
   .handler(async ({ data, context }) => {
-    const shortCode = data.shortCode.trim().toUpperCase()
     const name = data.name.trim()
-
-    const { data: existing } = await context.supabase
-      .from('companies')
-      .select('id')
-      .ilike('short_code', shortCode)
-      .maybeSingle()
-
-    if (existing) {
-      return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' } as const
-    }
 
     const pinHash = await bcrypt.hash(data.pin, PIN_HASH_ROUNDS)
 
     const { error } = await context.supabase.from('companies').insert({
-      short_code: shortCode,
       name,
       customer_number: data.customerNumber.trim(),
       street: data.street.trim(),
@@ -113,24 +97,11 @@ export const adminUpdateCompany = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => updateCompanySchema.parse(data))
   .handler(async ({ data, context }) => {
-    const shortCode = data.shortCode.trim().toUpperCase()
     const name = data.name.trim()
-
-    const { data: existing } = await context.supabase
-      .from('companies')
-      .select('id')
-      .ilike('short_code', shortCode)
-      .neq('id', data.id)
-      .maybeSingle()
-
-    if (existing) {
-      return { ok: false, message: 'Das Kundenkuerzel ist bereits vergeben.' } as const
-    }
 
     const { error } = await context.supabase
       .from('companies')
       .update({
-        short_code: shortCode,
         name,
         customer_number: data.customerNumber.trim(),
         street: data.street.trim(),
@@ -184,18 +155,17 @@ export const adminCompaniesQueryOptions = () =>
     queryFn: () => adminListCompanies(),
   })
 
-// Pre-login search box only ever needs id/shortCode/name — the other Company
+// Pre-login search box only ever needs id/name — the other Company
 // fields are filled with empty placeholders so this still matches the shape
 // consumed elsewhere in the app.
 export const publicCompaniesQueryOptions = () =>
   queryOptions({
     queryKey: ['companies', 'public'] as const,
     queryFn: async () => {
-      const { data, error } = await supabaseBrowser.from('companies_public').select('id, short_code, name')
+      const { data, error } = await supabaseBrowser.from('companies_public').select('id, name')
       if (error || !data) return []
       return data.map((row) => ({
         id: row.id,
-        shortCode: row.short_code,
         name: row.name,
         customerNumber: '',
         street: '',

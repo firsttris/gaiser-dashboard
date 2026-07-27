@@ -2,7 +2,6 @@ export type PriceCategory = 'private' | 'business'
 
 export type CompanyRow = {
   id: string
-  short_code: string
   name: string
   customer_number: string
   street: string
@@ -16,7 +15,7 @@ export type CompanyRow = {
   updated_at: string
 }
 
-export type CompanyPublicRow = Pick<CompanyRow, 'id' | 'short_code' | 'name'>
+export type CompanyPublicRow = Pick<CompanyRow, 'id' | 'name'>
 
 export type AdminUserRow = {
   user_id: string

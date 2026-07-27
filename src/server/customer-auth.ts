@@ -16,7 +16,6 @@ const signInSchema = z.object({
 
 function toPublicCompany(company: {
   id: string
-  short_code: string
   name: string
   customer_number: string
   street: string
@@ -26,7 +25,6 @@ function toPublicCompany(company: {
 }) {
   return {
     id: company.id,
-    shortCode: company.short_code,
     name: company.name,
     customerNumber: company.customer_number,
     street: company.street,
@@ -43,7 +41,7 @@ export const customerSignIn = createServerFn({ method: 'POST' })
     const { data: company } = await supabase
       .from('companies')
       .select(
-        'id, short_code, name, customer_number, street, postal_code, city, price_category, pin_hash, failed_pin_attempts, pin_locked_until',
+        'id, name, customer_number, street, postal_code, city, price_category, pin_hash, failed_pin_attempts, pin_locked_until',
       )
       .eq('id', data.companyId)
       .maybeSingle()
@@ -94,7 +92,7 @@ export const getCustomerSessionStatus = createServerFn({ method: 'GET' }).handle
   const supabase = getServiceSupabaseClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, short_code, name, customer_number, street, postal_code, city, price_category')
+    .select('id, name, customer_number, street, postal_code, city, price_category')
     .eq('id', session.data.companyId)
     .maybeSingle()
 
