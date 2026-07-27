@@ -1,11 +1,18 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { ArrowDownToLine, ArrowUpFromLine, Clock, Truck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { WizardFlow } from '../components/wizard-flow'
 import { TruckWizardFlow } from '../components/truck-wizard-flow'
 import { useAppState, type FlowType } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/neuer-vorgang')({ component: AdminNeuerVorgangPage })
+export const Route = createFileRoute('/admin/neuer-vorgang')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminNeuerVorgangPage,
+})
 
 type VorgangVariant = FlowType | 'lkw'
 

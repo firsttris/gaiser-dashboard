@@ -1,10 +1,47 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { adminSessionStatusQueryOptions, adminSignIn, adminSignOut } from '../server/admin-auth'
+import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut } from '../server/customer-auth'
+import {
+  adminCompaniesQueryOptions,
+  publicCompaniesQueryOptions,
+  adminCreateCompany,
+  adminUpdateCompany,
+  adminDeleteCompany,
+  adminSetCompanyPin,
+} from '../server/companies'
+import { productsQueryOptions, adminCreateProduct, adminUpdateProduct, adminDeleteProduct } from '../server/products'
+import { trucksQueryOptions, adminCreateTruck, adminUpdateTruck, adminDeleteTruck } from '../server/trucks'
+import {
+  constructionSitesQueryOptions,
+  adminCreateConstructionSite,
+  adminUpdateConstructionSite,
+  adminDeleteConstructionSite,
+} from '../server/construction-sites'
+import {
+  numberingSettingsQueryOptions,
+  updateNumberingSettings as apiUpdateNumberingSettings,
+  generateInvoiceNumber as apiGenerateInvoiceNumber,
+} from '../server/numbering'
+import {
+  recordsQueryOptions,
+  createRecord as apiCreateRecord,
+  createTruckRecord as apiCreateTruckRecord,
+  updateRecordStatus as apiUpdateRecordStatus,
+  assignInvoice as apiAssignInvoice,
+  assignCancel as apiAssignCancel,
+} from '../server/records'
+
+export { formatGeneratedNumber } from '../utils/numbering-format'
 
 export type FlowType = 'pickup' | 'dropoff'
 export type RecordType = FlowType | 'lkw'
 export type RecordStatus = 'offen' | 'lieferschein' | 'rechnung' | 'bezahlt' | 'storniert'
 export type PriceCategory = 'private' | 'business'
 
+// Every domain entity below lives in Supabase — see src/server/*.ts. Nothing
+// in this file touches localStorage; AppStateProvider is a thin TanStack
+// Query wrapper, not a data store.
 export type Company = {
   id: string
   name: string
@@ -12,7 +49,6 @@ export type Company = {
   street: string
   postalCode: string
   city: string
-  pin: string
   priceCategory: PriceCategory
 }
 
@@ -69,6 +105,14 @@ export type NumberingSettings = {
   numberPadding: number
 }
 
+const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
+  invoiceTemplate: 'RG-{JAHR}{MONAT}{TAG}-{NUMMER}',
+  deliveryNoteTemplate: 'LS-{JAHR}{MONAT}{TAG}-{NUMMER}',
+  nextInvoiceNumber: 1,
+  nextDeliveryNoteNumber: 1,
+  numberPadding: 4,
+}
+
 type UpdateNumberingSettingsInput = Partial<NumberingSettings>
 
 type CreateRecordInput = {
@@ -111,7 +155,6 @@ type UpdateCompanyInput = {
   street: string
   postalCode: string
   city: string
-  pin: string
   priceCategory: PriceCategory
 }
 
@@ -162,6 +205,11 @@ type DeleteConstructionSiteInput = {
   id: string
 }
 
+type SetCompanyPinInput = {
+  companyId: string
+  pin: string
+}
+
 type AppState = {
   hydrated: boolean
   companies: Company[]
@@ -173,399 +221,217 @@ type AppState = {
   constructionSites: ConstructionSite[]
   records: RecordItem[]
   numberingSettings: NumberingSettings
-  login: (companyId: string, pin: string) => LoginResult
+  login: (companyId: string, pin: string) => Promise<LoginResult>
   logout: () => void
-  adminLogin: (password: string) => LoginResult
+  adminLogin: (email: string, password: string) => Promise<LoginResult>
   adminLogout: () => void
-  clearCache: () => void
-  createRecord: (input: CreateRecordInput) => RecordItem | null
-  createTruckRecord: (input: CreateTruckRecordInput) => RecordItem | null
-  createCompany: (input: CreateCompanyInput) => CreateCompanyResult
-  updateCompany: (input: UpdateCompanyInput) => CreateCompanyResult
-  deleteCompany: (input: DeleteCompanyInput) => CreateCompanyResult
-  createProduct: (input: CreateProductInput) => CreateCompanyResult
-  updateProduct: (input: UpdateProductInput) => CreateCompanyResult
-  deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
-  createTruck: (input: CreateTruckInput) => CreateCompanyResult
-  updateTruck: (input: UpdateTruckInput) => CreateCompanyResult
-  deleteTruck: (input: DeleteTruckInput) => CreateCompanyResult
-  createConstructionSite: (input: CreateConstructionSiteInput) => CreateCompanyResult
-  updateConstructionSite: (input: UpdateConstructionSiteInput) => CreateCompanyResult
-  deleteConstructionSite: (input: DeleteConstructionSiteInput) => CreateCompanyResult
+  createRecord: (input: CreateRecordInput) => Promise<RecordItem | null>
+  createTruckRecord: (input: CreateTruckRecordInput) => Promise<RecordItem | null>
+  createCompany: (input: CreateCompanyInput) => Promise<CreateCompanyResult>
+  updateCompany: (input: UpdateCompanyInput) => Promise<CreateCompanyResult>
+  deleteCompany: (input: DeleteCompanyInput) => Promise<CreateCompanyResult>
+  setCompanyPin: (input: SetCompanyPinInput) => Promise<CreateCompanyResult>
+  createProduct: (input: CreateProductInput) => Promise<CreateCompanyResult>
+  updateProduct: (input: UpdateProductInput) => Promise<CreateCompanyResult>
+  deleteProduct: (input: DeleteProductInput) => Promise<CreateCompanyResult>
+  createTruck: (input: CreateTruckInput) => Promise<CreateCompanyResult>
+  updateTruck: (input: UpdateTruckInput) => Promise<CreateCompanyResult>
+  deleteTruck: (input: DeleteTruckInput) => Promise<CreateCompanyResult>
+  createConstructionSite: (input: CreateConstructionSiteInput) => Promise<CreateCompanyResult>
+  updateConstructionSite: (input: UpdateConstructionSiteInput) => Promise<CreateCompanyResult>
+  deleteConstructionSite: (input: DeleteConstructionSiteInput) => Promise<CreateCompanyResult>
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
-  assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
   assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
   assignCancel: (recordIds: number[], cancelId: string) => void
-  updateNumberingSettings: (input: UpdateNumberingSettingsInput) => CreateCompanyResult
-  generateInvoiceNumber: () => string
-  generateDeliveryNoteNumber: () => string
-}
-
-const companiesSeed: Company[] = [
-  { id: 'kr', name: 'Krampfert Wohnbau GmbH', customerNumber: '', street: '', postalCode: '', city: '', pin: '1234', priceCategory: 'business' },
-  { id: 'be', name: 'Bergbau Erden AG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2468', priceCategory: 'business' },
-  { id: 'no', name: 'Nordstein Bau', customerNumber: '', street: '', postalCode: '', city: '', pin: '7777', priceCategory: 'business' },
-  { id: 'wa', name: 'Walter Tiefbau KG', customerNumber: '', street: '', postalCode: '', city: '', pin: '2222', priceCategory: 'business' },
-]
-
-const productsSeed: Product[] = [
-  // Annahme → Material bringen (dropoff)
-  { id: 1,  name: 'Unbewehrter Betonschutt, Pflastersteine, Stahlbeton', unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 8,  dropoffBusinessPrice: 8 },
-  { id: 3,  name: 'Stark bewehrter Betonschutt',              unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 45, dropoffBusinessPrice: 45 },
-  { id: 4,  name: 'Bituminöser Straßenaufbruch',              unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 15, dropoffBusinessPrice: 15 },
-  { id: 5,  name: 'Gemischter Bauschutt',                     unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 25, dropoffBusinessPrice: 25 },
-  { id: 6,  name: 'Aushub',                                   unit: 'm³', flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 45, dropoffBusinessPrice: 40 },
-  { id: 7,  name: 'Aushub mit Bauschutt o.ä. vermischt',      unit: 'm³', flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 60, dropoffBusinessPrice: 60 },
-  // Verkauf → Material holen (pickup)
-  { id: 8,  name: 'Betonrecycling 0/45 FSS-STS',              unit: 't',  flow: 'pickup', pickupPrivatePrice: 10,   pickupBusinessPrice: 8,    dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 9,  name: 'Bauschuttrecycling 0/56',                  unit: 't',  flow: 'pickup', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 10, name: 'Gesiebt Mutterboden',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 12.5, pickupBusinessPrice: 8.5,  dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 11, name: 'Rollkies 8/16',                            unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 24.2, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 12, name: 'Mischkies 0/16',                           unit: 't',  flow: 'pickup', pickupPrivatePrice: 29,   pickupBusinessPrice: 25.3, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 13, name: 'Sand 0/2',                                 unit: 't',  flow: 'pickup', pickupPrivatePrice: 28,   pickupBusinessPrice: 24.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 14, name: 'Schwemmsand',                              unit: 't',  flow: 'pickup', pickupPrivatePrice: 18,   pickupBusinessPrice: 15.5, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 15, name: 'Mineralgemisch 0/16',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 24,   pickupBusinessPrice: 16.7, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 16, name: 'Mineralgemisch 0/32',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 22,   pickupBusinessPrice: 15.1, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-  { id: 17, name: 'Splitt 2/5',                               unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 20.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
-]
-
-const trucksSeed: Truck[] = [
-  { id: 1, name: 'LKW 3-Achser inkl. Maut', privatePrice: 90, businessPrice: 90 },
-]
-
-const constructionSitesSeed: ConstructionSite[] = [
-  { id: 'baustelle-nordring', name: 'Nordring 12, Berlin' },
-  { id: 'baustelle-hafenallee', name: 'Hafenallee 8, Potsdam' },
-]
-
-const numberingSettingsSeed: NumberingSettings = {
-  invoiceTemplate: 'RG-{JAHR}{MONAT}{TAG}-{NUMMER}',
-  deliveryNoteTemplate: 'LS-{JAHR}{MONAT}{TAG}-{NUMMER}',
-  nextInvoiceNumber: 1,
-  nextDeliveryNoteNumber: 1,
-  numberPadding: 4,
-}
-
-export function formatGeneratedNumber(template: string, counter: number, padding: number) {
-  const now = new Date()
-  const jahr = String(now.getFullYear())
-  const monat = String(now.getMonth() + 1).padStart(2, '0')
-  const tag = String(now.getDate()).padStart(2, '0')
-  const nummer = String(counter).padStart(Math.max(padding, 1), '0')
-
-  return template
-    .replaceAll('{JAHR}', jahr)
-    .replaceAll('{MONAT}', monat)
-    .replaceAll('{TAG}', tag)
-    .replaceAll('{NUMMER}', nummer)
-}
-
-type LegacyCompany = Omit<Company, 'priceCategory' | 'customerNumber' | 'street' | 'postalCode' | 'city'> & {
-  priceCategory?: PriceCategory
-  customerNumber?: string
-  street?: string
-  postalCode?: string
-  city?: string
-}
-type LegacyProduct = Omit<
-  Product,
-  'pickupPrivatePrice' | 'pickupBusinessPrice' | 'dropoffPrivatePrice' | 'dropoffBusinessPrice'
-> & {
-  pickupPrice?: number
-  dropoffPrice?: number
-  pickupPrivatePrice?: number
-  pickupBusinessPrice?: number
-  dropoffPrivatePrice?: number
-  dropoffBusinessPrice?: number
-}
-
-function normalizeCompanies(raw: LegacyCompany[]): Company[] {
-  return raw.map((company) => ({
-    ...company,
-    priceCategory: company.priceCategory ?? 'business',
-    customerNumber: company.customerNumber ?? '',
-    street: company.street ?? '',
-    postalCode: company.postalCode ?? '',
-    city: company.city ?? '',
-  }))
-}
-
-function normalizeProducts(raw: LegacyProduct[]): Product[] {
-  const defaultsById = new Map(productsSeed.map((product) => [product.id, product]))
-
-  const normalized = raw.map((product) => {
-    const defaults = defaultsById.get(product.id)
-
-    return {
-      id: product.id,
-      name: product.name,
-      unit: product.unit,
-      flow: product.flow,
-      // Legacy datasets had only one price field. We keep business from legacy,
-      // but initialize missing private prices from the official 2026 price list seed.
-      pickupPrivatePrice: product.pickupPrivatePrice ?? defaults?.pickupPrivatePrice ?? product.pickupPrice ?? 0,
-      pickupBusinessPrice: product.pickupBusinessPrice ?? product.pickupPrice ?? defaults?.pickupBusinessPrice ?? 0,
-      dropoffPrivatePrice: product.dropoffPrivatePrice ?? defaults?.dropoffPrivatePrice ?? product.dropoffPrice ?? 0,
-      dropoffBusinessPrice: product.dropoffBusinessPrice ?? product.dropoffPrice ?? defaults?.dropoffBusinessPrice ?? 0,
-    }
-  })
-
-  const hasAnyTierDifference = normalized.some((product) => {
-    if (product.flow === 'pickup') {
-      return product.pickupPrivatePrice !== product.pickupBusinessPrice
-    }
-
-    return product.dropoffPrivatePrice !== product.dropoffBusinessPrice
-  })
-
-  if (!hasAnyTierDifference) {
-    return normalized.map((product) => {
-      const defaults = defaultsById.get(product.id)
-      if (!defaults) return product
-
-      return {
-        ...product,
-        pickupPrivatePrice: defaults.pickupPrivatePrice,
-        dropoffPrivatePrice: defaults.dropoffPrivatePrice,
-      }
-    })
-  }
-
-  return normalized
-}
-
-function getUnitPrice(product: Product, type: FlowType, priceCategory: PriceCategory) {
-  if (type === 'pickup') {
-    return priceCategory === 'private' ? product.pickupPrivatePrice : product.pickupBusinessPrice
-  }
-
-  return priceCategory === 'private' ? product.dropoffPrivatePrice : product.dropoffBusinessPrice
-}
-
-function normalizeRecordStatus(status: string): RecordStatus {
-  if (status === 'in_bearbeitung') return 'lieferschein'
-  if (status === 'abgerechnet') return 'rechnung'
-
-  if (
-    status === 'offen' ||
-    status === 'lieferschein' ||
-    status === 'rechnung' ||
-    status === 'bezahlt' ||
-    status === 'storniert'
-  ) {
-    return status
-  }
-
-  return 'offen'
-}
-
-function normalizeRecords(raw: RecordItem[]): RecordItem[] {
-  return raw.map((record) => ({
-    ...record,
-    constructionSiteId: (record as Partial<RecordItem>).constructionSiteId ?? '',
-    constructionSiteName: (record as Partial<RecordItem>).constructionSiteName ?? '',
-    status: normalizeRecordStatus(record.status),
-  }))
-}
-
-function normalizeConstructionSiteName(name: string) {
-  return name
-    .trim()
-    .replace(/\s+/g, ' ')
-}
-
-function resolveConstructionSite(name: string, sites: ConstructionSite[]) {
-  const cleanedName = normalizeConstructionSiteName(name)
-  if (!cleanedName) return null
-
-  const existing = sites.find(
-    (item) => item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
-  )
-
-  return {
-    site: existing ?? ({ id: createConstructionSiteId(cleanedName), name: cleanedName } satisfies ConstructionSite),
-    isNew: !existing,
-  }
-}
-
-function createConstructionSiteId(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-
-  return `site-${slug || 'neu'}-${Date.now()}`
+  updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
+  generateInvoiceNumber: () => Promise<string>
 }
 
 const AppStateContext = createContext<AppState | null>(null)
-const ADMIN_PASSWORD = 'admin'
-const STORAGE_KEYS = {
-  companies: 'gaiser.mock.companies.v1',
-  products: 'gaiser.mock.products.v1',
-  trucks: 'gaiser.mock.trucks.v1',
-  constructionSites: 'gaiser.mock.constructionSites.v1',
-  records: 'gaiser.mock.records.v1',
-  selectedCompanyId: 'gaiser.mock.selectedCompanyId.v1',
-  adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
-  numberingSettings: 'gaiser.mock.numberingSettings.v1',
-}
-
-function readStorage<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
-}
-
-function writeStorage<T>(key: string, value: T) {
-  if (typeof window === 'undefined') return
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // Ignore quota/serialization errors in mock mode.
-  }
-}
-
-function loadPersistedState() {
-  return {
-    companies: normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
-    products: normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
-    trucks: readStorage<Truck[]>(STORAGE_KEYS.trucks, trucksSeed),
-    constructionSites: readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed),
-    records: normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
-    selectedCompanyId: readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null),
-    adminLoggedIn: readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false),
-    numberingSettings: readStorage<NumberingSettings>(STORAGE_KEYS.numberingSettings, numberingSettingsSeed),
-  }
-}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [hydrated, setHydrated] = useState(false)
-  const [companies, setCompanies] = useState<Company[]>(companiesSeed)
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
-  const [products, setProducts] = useState<Product[]>(productsSeed)
-  const [trucks, setTrucks] = useState<Truck[]>(trucksSeed)
-  const [constructionSites, setConstructionSites] = useState<ConstructionSite[]>(constructionSitesSeed)
-  const [records, setRecords] = useState<RecordItem[]>([])
-  const [numberingSettings, setNumberingSettings] = useState<NumberingSettings>(numberingSettingsSeed)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    const persisted = loadPersistedState()
-    setCompanies(persisted.companies)
-    setProducts(persisted.products)
-    setTrucks(persisted.trucks)
-    setConstructionSites(persisted.constructionSites)
-    setRecords(persisted.records)
-    setIsAdminLoggedIn(persisted.adminLoggedIn)
-    setNumberingSettings(persisted.numberingSettings)
-    setSelectedCompany(
-      persisted.companies.find((company) => company.id === persisted.selectedCompanyId) ?? null,
-    )
-    setHydrated(true)
-  }, [])
+  const adminSessionQuery = useQuery(adminSessionStatusQueryOptions())
+  const customerSessionQuery = useQuery(customerSessionStatusQueryOptions())
+  const isAdminLoggedIn = adminSessionQuery.data?.isAdminLoggedIn ?? false
+  const selectedCompany = customerSessionQuery.data?.company ?? null
+  const hasSession = isAdminLoggedIn || selectedCompany !== null
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.companies, companies)
-  }, [hydrated, companies])
+  // Two separate queries (rather than one conditional queryOptions object) so
+  // each stays a single, stable shape — switching only which one is enabled.
+  const adminCompaniesQuery = useQuery({ ...adminCompaniesQueryOptions(), enabled: isAdminLoggedIn })
+  const publicCompaniesQuery = useQuery({ ...publicCompaniesQueryOptions(), enabled: !isAdminLoggedIn })
+  const companiesQuery = isAdminLoggedIn ? adminCompaniesQuery : publicCompaniesQuery
+  const companies = companiesQuery.data ?? []
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.products, products)
-  }, [hydrated, products])
+  // Dual-mode catalog/records data — only meaningful once some session exists,
+  // so these stay disabled (and don't block hydration) before any login.
+  const productsQuery = useQuery({ ...productsQueryOptions(), enabled: hasSession })
+  const trucksQuery = useQuery({ ...trucksQueryOptions(), enabled: hasSession })
+  const constructionSitesQuery = useQuery({ ...constructionSitesQueryOptions(), enabled: hasSession })
+  const recordsQuery = useQuery({ ...recordsQueryOptions(), enabled: hasSession })
+  const numberingSettingsQuery = useQuery({ ...numberingSettingsQueryOptions(), enabled: isAdminLoggedIn })
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.trucks, trucks)
-  }, [hydrated, trucks])
+  const products = productsQuery.data ?? []
+  const trucks = trucksQuery.data ?? []
+  const constructionSites = constructionSitesQuery.data ?? []
+  const records = recordsQuery.data ?? []
+  const numberingSettings = numberingSettingsQuery.data ?? DEFAULT_NUMBERING_SETTINGS
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.constructionSites, constructionSites)
-  }, [hydrated, constructionSites])
+  const hydrated =
+    adminSessionQuery.isFetched &&
+    customerSessionQuery.isFetched &&
+    companiesQuery.isFetched &&
+    (!hasSession ||
+      (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched && recordsQuery.isFetched))
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.records, records)
-  }, [hydrated, records])
+  const invalidate = (queryKey: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey })
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.selectedCompanyId, selectedCompany?.id ?? null)
-  }, [hydrated, selectedCompany])
+  const adminSignInMutation = useMutation({
+    mutationFn: adminSignIn,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['auth', 'admin'])
+    },
+  })
+  const adminSignOutMutation = useMutation({
+    mutationFn: adminSignOut,
+    onSuccess: () => {
+      invalidate(['auth', 'admin'])
+      invalidate(['companies'])
+    },
+  })
+  const customerSignInMutation = useMutation({
+    mutationFn: customerSignIn,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['auth', 'customer'])
+    },
+  })
+  const customerSignOutMutation = useMutation({
+    mutationFn: customerSignOut,
+    onSuccess: () => invalidate(['auth', 'customer']),
+  })
+  const createCompanyMutation = useMutation({
+    mutationFn: adminCreateCompany,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['companies'])
+    },
+  })
+  const updateCompanyMutation = useMutation({
+    mutationFn: adminUpdateCompany,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['companies'])
+    },
+  })
+  const deleteCompanyMutation = useMutation({
+    mutationFn: adminDeleteCompany,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['companies'])
+    },
+  })
+  const setCompanyPinMutation = useMutation({ mutationFn: adminSetCompanyPin })
 
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.adminLoggedIn, isAdminLoggedIn)
-  }, [hydrated, isAdminLoggedIn])
-
-  useEffect(() => {
-    if (!hydrated) return
-    writeStorage(STORAGE_KEYS.numberingSettings, numberingSettings)
-  }, [hydrated, numberingSettings])
-
-  useEffect(() => {
-    if (!selectedCompany) return
-
-    const exists = companies.some((company) => company.id === selectedCompany.id)
-    if (!exists) {
-      setSelectedCompany(null)
-    }
-  }, [companies, selectedCompany])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    function onStorage(event: StorageEvent) {
-      if (!event.key) return
-
-      if (event.key === STORAGE_KEYS.companies) {
-        setCompanies(normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)))
+  const createProductMutation = useMutation({
+    mutationFn: adminCreateProduct,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['products'])
+    },
+  })
+  const updateProductMutation = useMutation({
+    mutationFn: adminUpdateProduct,
+    onSuccess: (result) => {
+      if (result.ok) {
+        invalidate(['products'])
+        invalidate(['records'])
       }
+    },
+  })
+  const deleteProductMutation = useMutation({
+    mutationFn: adminDeleteProduct,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['products'])
+    },
+  })
 
-      if (event.key === STORAGE_KEYS.products) {
-        setProducts(normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)))
+  const createTruckMutation = useMutation({
+    mutationFn: adminCreateTruck,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['trucks'])
+    },
+  })
+  const updateTruckMutation = useMutation({
+    mutationFn: adminUpdateTruck,
+    onSuccess: (result) => {
+      if (result.ok) {
+        invalidate(['trucks'])
+        invalidate(['records'])
       }
+    },
+  })
+  const deleteTruckMutation = useMutation({
+    mutationFn: adminDeleteTruck,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['trucks'])
+    },
+  })
 
-      if (event.key === STORAGE_KEYS.trucks) {
-        setTrucks(readStorage<Truck[]>(STORAGE_KEYS.trucks, trucksSeed))
+  const createSiteMutation = useMutation({
+    mutationFn: adminCreateConstructionSite,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['construction-sites'])
+    },
+  })
+  const updateSiteMutation = useMutation({
+    mutationFn: adminUpdateConstructionSite,
+    onSuccess: (result) => {
+      if (result.ok) {
+        invalidate(['construction-sites'])
+        invalidate(['records'])
       }
+    },
+  })
+  const deleteSiteMutation = useMutation({
+    mutationFn: adminDeleteConstructionSite,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['construction-sites'])
+    },
+  })
 
-      if (event.key === STORAGE_KEYS.constructionSites) {
-        setConstructionSites(readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed))
-      }
+  const createRecordMutation = useMutation({
+    mutationFn: apiCreateRecord,
+    onSuccess: (record) => {
+      if (record) invalidate(['records'])
+    },
+  })
+  const createTruckRecordMutation = useMutation({
+    mutationFn: apiCreateTruckRecord,
+    onSuccess: (record) => {
+      if (record) invalidate(['records'])
+    },
+  })
+  const updateRecordStatusMutation = useMutation({
+    mutationFn: apiUpdateRecordStatus,
+    onSuccess: () => invalidate(['records']),
+  })
+  const assignInvoiceMutation = useMutation({
+    mutationFn: apiAssignInvoice,
+    onSuccess: () => invalidate(['records']),
+  })
+  const assignCancelMutation = useMutation({
+    mutationFn: apiAssignCancel,
+    onSuccess: () => invalidate(['records']),
+  })
 
-      if (event.key === STORAGE_KEYS.records) {
-        setRecords(normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])))
-      }
-
-      if (event.key === STORAGE_KEYS.selectedCompanyId) {
-        const selectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
-        const nextCompanies = normalizeCompanies(
-          readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed),
-        )
-        setSelectedCompany(nextCompanies.find((company) => company.id === selectedCompanyId) ?? null)
-      }
-
-      if (event.key === STORAGE_KEYS.adminLoggedIn) {
-        setIsAdminLoggedIn(readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false))
-      }
-
-      if (event.key === STORAGE_KEYS.numberingSettings) {
-        setNumberingSettings(readStorage<NumberingSettings>(STORAGE_KEYS.numberingSettings, numberingSettingsSeed))
-      }
-    }
-
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  const updateNumberingSettingsMutation = useMutation({
+    mutationFn: apiUpdateNumberingSettings,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['numbering-settings'])
+    },
+  })
+  const generateInvoiceNumberMutation = useMutation({
+    mutationFn: apiGenerateInvoiceNumber,
+    onSuccess: () => invalidate(['numbering-settings']),
+  })
 
   const value = useMemo<AppState>(
     () => ({
@@ -579,570 +445,75 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       constructionSites,
       records,
       numberingSettings,
-      login: (companyId: string, pin: string) => {
-        const company = companies.find((item) => item.id === companyId)
-        if (!company) {
-          return { ok: false, message: 'Bitte wähle eine Firma aus.' }
-        }
-
-        if (company.pin !== pin) {
-          return { ok: false, message: 'PIN ist falsch.' }
-        }
-
-        setSelectedCompany(company)
-        return { ok: true }
+      login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
+      logout: () => customerSignOutMutation.mutate({}),
+      adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
+      adminLogout: () => adminSignOutMutation.mutate({}),
+      createRecord: async ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
+        return createRecordMutation.mutateAsync({
+          data: { type, productId: product.id, amount, constructionSiteName, companyId: company?.id },
+        })
       },
-      logout: () => {
-        setSelectedCompany(null)
+      createTruckRecord: async ({ truck, hours, constructionSiteName, company }: CreateTruckRecordInput) => {
+        return createTruckRecordMutation.mutateAsync({
+          data: { truckId: truck.id, hours, constructionSiteName, companyId: company?.id },
+        })
       },
-      adminLogin: (password: string) => {
-        if (password.trim() !== ADMIN_PASSWORD) {
-          return { ok: false, message: 'Admin-Passwort ist falsch.' }
-        }
-
-        setIsAdminLoggedIn(true)
-        return { ok: true }
-      },
-      adminLogout: () => {
-        setIsAdminLoggedIn(false)
-      },
-      clearCache: () => {
-        if (typeof window !== 'undefined') {
-          const preserved = [STORAGE_KEYS.selectedCompanyId, STORAGE_KEYS.adminLoggedIn]
-          Object.keys(localStorage)
-            .filter((k) => k.startsWith('gaiser.') && !preserved.includes(k))
-            .forEach((k) => localStorage.removeItem(k))
-        }
-        setCompanies(companiesSeed)
-        setProducts(productsSeed)
-        setTrucks(trucksSeed)
-        setConstructionSites(constructionSitesSeed)
-        setRecords([])
-      },
-      createRecord: ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
-        const activeCompany = company ?? selectedCompany
-        if (!activeCompany) return null
-
-        const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
-        if (!resolved) return null
-
-        if (resolved.isNew) {
-          setConstructionSites((prev) => [...prev, resolved.site])
-        }
-
-        const unitPrice = getUnitPrice(product, type, activeCompany.priceCategory)
-        const total = unitPrice * amount
-        const deliveryNoteId = formatGeneratedNumber(
-          numberingSettings.deliveryNoteTemplate,
-          numberingSettings.nextDeliveryNoteNumber,
-          numberingSettings.numberPadding,
-        )
-        const nextRecord: RecordItem = {
-          id: Date.now(),
-          company: activeCompany.name,
-          constructionSiteId: resolved.site.id,
-          constructionSiteName: resolved.site.name,
-          type,
-          productName: product.name,
-          amount,
-          unit: product.unit,
-          unitPrice,
-          total,
-          status: 'lieferschein',
-          createdAt: new Date().toLocaleString('de-DE'),
-          deliveryNoteId,
-        }
-
-        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
-        setRecords((prev) => [nextRecord, ...prev])
-        return nextRecord
-      },
-      createTruckRecord: ({ truck, hours, constructionSiteName, company }: CreateTruckRecordInput) => {
-        const activeCompany = company ?? selectedCompany
-        if (!activeCompany) return null
-
-        const resolved = resolveConstructionSite(constructionSiteName, constructionSites)
-        if (!resolved) return null
-
-        if (resolved.isNew) {
-          setConstructionSites((prev) => [...prev, resolved.site])
-        }
-
-        const unitPrice = activeCompany.priceCategory === 'private' ? truck.privatePrice : truck.businessPrice
-        const total = unitPrice * hours
-        const deliveryNoteId = formatGeneratedNumber(
-          numberingSettings.deliveryNoteTemplate,
-          numberingSettings.nextDeliveryNoteNumber,
-          numberingSettings.numberPadding,
-        )
-        const nextRecord: RecordItem = {
-          id: Date.now(),
-          company: activeCompany.name,
-          constructionSiteId: resolved.site.id,
-          constructionSiteName: resolved.site.name,
-          type: 'lkw',
-          productName: truck.name,
-          amount: hours,
-          unit: 'Std.',
-          unitPrice,
-          total,
-          status: 'lieferschein',
-          createdAt: new Date().toLocaleString('de-DE'),
-          deliveryNoteId,
-        }
-
-        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
-        setRecords((prev) => [nextRecord, ...prev])
-        return nextRecord
-      },
-      createCompany: ({ name, customerNumber, street, postalCode, city, pin, priceCategory }: CreateCompanyInput) => {
-        const cleanedName = name.trim()
-        const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
-
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname ausfüllen.' }
-        }
-
-        if (cleanedPin.length !== 4) {
-          return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
-        }
-
-        const hasName = companies.some((company) => company.name.toLowerCase() === cleanedName.toLowerCase())
-        if (hasName) {
-          return { ok: false, message: 'Der Kundenname ist bereits vergeben.' }
-        }
-
-        const company: Company = {
-          id: `${cleanedName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
-          name: cleanedName,
-          customerNumber: customerNumber.trim(),
-          street: street.trim(),
-          postalCode: postalCode.trim(),
-          city: city.trim(),
-          pin: cleanedPin,
-          priceCategory,
-        }
-
-        setCompanies((prev) => [...prev, company])
-        return { ok: true }
-      },
-      updateCompany: ({ id, name, customerNumber, street, postalCode, city, pin, priceCategory }: UpdateCompanyInput) => {
-        const company = companies.find((item) => item.id === id)
-        if (!company) {
-          return { ok: false, message: 'Der Kunde wurde nicht gefunden.' }
-        }
-
-        const cleanedName = name.trim()
-        const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
-
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte Kundenname ausfüllen.' }
-        }
-
-        if (cleanedPin.length !== 4) {
-          return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
-        }
-
-        const hasName = companies.some(
-          (item) => item.id !== id && item.name.toLowerCase() === cleanedName.toLowerCase(),
-        )
-        if (hasName) {
-          return { ok: false, message: 'Der Kundenname ist bereits vergeben.' }
-        }
-
-        const updatedCompany: Company = {
-          id,
-          name: cleanedName,
-          customerNumber: customerNumber.trim(),
-          street: street.trim(),
-          postalCode: postalCode.trim(),
-          city: city.trim(),
-          pin: cleanedPin,
-          priceCategory,
-        }
-
-        setCompanies((prev) => prev.map((item) => (item.id === id ? updatedCompany : item)))
-
-        if (selectedCompany?.id === id) {
-          setSelectedCompany(updatedCompany)
-        }
-
-        if (company.name !== cleanedName) {
-          setRecords((prev) =>
-            prev.map((record) => {
-              if (record.company !== company.name) return record
-              return { ...record, company: cleanedName }
-            }),
-          )
-        }
-
-        return { ok: true }
-      },
-      deleteCompany: ({ id }: DeleteCompanyInput) => {
-        const company = companies.find((item) => item.id === id)
-        if (!company) {
-          return { ok: false, message: 'Die Firma wurde nicht gefunden.' }
-        }
-
-        if (companies.length <= 1) {
-          return { ok: false, message: 'Mindestens eine Firma muss vorhanden sein.' }
-        }
-
-        const hasHistory = records.some((record) => record.company === company.name)
-        if (hasHistory) {
-          return {
-            ok: false,
-            message: 'Firma kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
-          }
-        }
-
-        setCompanies((prev) => prev.filter((item) => item.id !== id))
-
-        if (selectedCompany?.id === id) {
-          setSelectedCompany(null)
-        }
-
-        return { ok: true }
-      },
-      createProduct: ({ name, unit, flow, privatePrice, businessPrice }: CreateProductInput) => {
-        const cleanedName = name.trim()
-        const cleanedUnit = unit.trim()
-        const parsedPrivatePrice = Number(privatePrice)
-        const parsedBusinessPrice = Number(businessPrice)
-
-        if (!cleanedName || !cleanedUnit) {
-          return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' }
-        }
-
-        if (
-          Number.isNaN(parsedPrivatePrice) ||
-          Number.isNaN(parsedBusinessPrice) ||
-          parsedPrivatePrice < 0 ||
-          parsedBusinessPrice < 0
-        ) {
-          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
-        }
-
-        const nextId = products.reduce((maxValue, product) => Math.max(maxValue, product.id), 0) + 1
-        const product: Product = {
-          id: nextId,
-          name: cleanedName,
-          unit: cleanedUnit,
-          flow,
-          pickupPrivatePrice: flow === 'pickup' ? parsedPrivatePrice : 0,
-          pickupBusinessPrice: flow === 'pickup' ? parsedBusinessPrice : 0,
-          dropoffPrivatePrice: flow === 'dropoff' ? parsedPrivatePrice : 0,
-          dropoffBusinessPrice: flow === 'dropoff' ? parsedBusinessPrice : 0,
-        }
-
-        setProducts((prev) => [...prev, product])
-        return { ok: true }
-      },
-      updateProduct: ({ id, name, unit, flow, privatePrice, businessPrice }: UpdateProductInput) => {
-        const currentProduct = products.find((item) => item.id === id)
-        if (!currentProduct) {
-          return { ok: false, message: 'Das Produkt wurde nicht gefunden.' }
-        }
-
-        const cleanedName = name.trim()
-        const cleanedUnit = unit.trim()
-        const parsedPrivatePrice = Number(privatePrice)
-        const parsedBusinessPrice = Number(businessPrice)
-
-        if (!cleanedName || !cleanedUnit) {
-          return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' }
-        }
-
-        if (
-          Number.isNaN(parsedPrivatePrice) ||
-          Number.isNaN(parsedBusinessPrice) ||
-          parsedPrivatePrice < 0 ||
-          parsedBusinessPrice < 0
-        ) {
-          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
-        }
-
-        const updatedProduct: Product = {
-          id,
-          name: cleanedName,
-          unit: cleanedUnit,
-          flow,
-          pickupPrivatePrice: flow === 'pickup' ? parsedPrivatePrice : 0,
-          pickupBusinessPrice: flow === 'pickup' ? parsedBusinessPrice : 0,
-          dropoffPrivatePrice: flow === 'dropoff' ? parsedPrivatePrice : 0,
-          dropoffBusinessPrice: flow === 'dropoff' ? parsedBusinessPrice : 0,
-        }
-
-        setProducts((prev) => prev.map((item) => (item.id === id ? updatedProduct : item)))
-
-        if (currentProduct.name !== cleanedName) {
-          setRecords((prev) =>
-            prev.map((record) => {
-              if (record.productName !== currentProduct.name) return record
-              return { ...record, productName: cleanedName }
-            }),
-          )
-        }
-
-        return { ok: true }
-      },
-      deleteProduct: ({ id }: DeleteProductInput) => {
-        const currentProduct = products.find((item) => item.id === id)
-        if (!currentProduct) {
-          return { ok: false, message: 'Das Produkt wurde nicht gefunden.' }
-        }
-
-        const hasHistory = records.some((record) => record.productName === currentProduct.name)
-        if (hasHistory) {
-          return {
-            ok: false,
-            message: 'Produkt kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
-          }
-        }
-
-        const flowCount = products.filter((item) => item.flow === currentProduct.flow).length
-        if (flowCount <= 1) {
-          return {
-            ok: false,
-            message: 'Mindestens ein Produkt pro Typ muss vorhanden sein.',
-          }
-        }
-
-        setProducts((prev) => prev.filter((item) => item.id !== id))
-        return { ok: true }
-      },
-      createTruck: ({ name, privatePrice, businessPrice }: CreateTruckInput) => {
-        const cleanedName = name.trim()
-        const parsedPrivatePrice = Number(privatePrice)
-        const parsedBusinessPrice = Number(businessPrice)
-
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' }
-        }
-
-        if (
-          Number.isNaN(parsedPrivatePrice) ||
-          Number.isNaN(parsedBusinessPrice) ||
-          parsedPrivatePrice < 0 ||
-          parsedBusinessPrice < 0
-        ) {
-          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
-        }
-
-        const nextId = trucks.reduce((maxValue, truck) => Math.max(maxValue, truck.id), 0) + 1
-        const truck: Truck = {
-          id: nextId,
-          name: cleanedName,
-          privatePrice: parsedPrivatePrice,
-          businessPrice: parsedBusinessPrice,
-        }
-
-        setTrucks((prev) => [...prev, truck])
-        return { ok: true }
-      },
-      updateTruck: ({ id, name, privatePrice, businessPrice }: UpdateTruckInput) => {
-        const currentTruck = trucks.find((item) => item.id === id)
-        if (!currentTruck) {
-          return { ok: false, message: 'Der LKW wurde nicht gefunden.' }
-        }
-
-        const cleanedName = name.trim()
-        const parsedPrivatePrice = Number(privatePrice)
-        const parsedBusinessPrice = Number(businessPrice)
-
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' }
-        }
-
-        if (
-          Number.isNaN(parsedPrivatePrice) ||
-          Number.isNaN(parsedBusinessPrice) ||
-          parsedPrivatePrice < 0 ||
-          parsedBusinessPrice < 0
-        ) {
-          return { ok: false, message: 'Preise müssen gültige positive Zahlen sein.' }
-        }
-
-        const updatedTruck: Truck = {
-          id,
-          name: cleanedName,
-          privatePrice: parsedPrivatePrice,
-          businessPrice: parsedBusinessPrice,
-        }
-
-        setTrucks((prev) => prev.map((item) => (item.id === id ? updatedTruck : item)))
-
-        if (currentTruck.name !== cleanedName) {
-          setRecords((prev) =>
-            prev.map((record) => {
-              if (record.type !== 'lkw' || record.productName !== currentTruck.name) return record
-              return { ...record, productName: cleanedName }
-            }),
-          )
-        }
-
-        return { ok: true }
-      },
-      deleteTruck: ({ id }: DeleteTruckInput) => {
-        const currentTruck = trucks.find((item) => item.id === id)
-        if (!currentTruck) {
-          return { ok: false, message: 'Der LKW wurde nicht gefunden.' }
-        }
-
-        const hasHistory = records.some((record) => record.type === 'lkw' && record.productName === currentTruck.name)
-        if (hasHistory) {
-          return {
-            ok: false,
-            message: 'LKW kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
-          }
-        }
-
-        if (trucks.length <= 1) {
-          return { ok: false, message: 'Mindestens ein LKW muss vorhanden sein.' }
-        }
-
-        setTrucks((prev) => prev.filter((item) => item.id !== id))
-        return { ok: true }
-      },
-      createConstructionSite: ({ name }: CreateConstructionSiteInput) => {
-        const cleanedName = normalizeConstructionSiteName(name)
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte Baustellennamen ausfüllen.' }
-        }
-
-        const exists = constructionSites.some(
-          (item) => item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
-        )
-        if (exists) {
-          return { ok: false, message: 'Diese Baustelle existiert bereits.' }
-        }
-
-        const nextSite: ConstructionSite = {
-          id: createConstructionSiteId(cleanedName),
-          name: cleanedName,
-        }
-
-        setConstructionSites((prev) => [...prev, nextSite])
-        return { ok: true }
-      },
-      updateConstructionSite: ({ id, name }: UpdateConstructionSiteInput) => {
-        const currentSite = constructionSites.find((item) => item.id === id)
-        if (!currentSite) {
-          return { ok: false, message: 'Die Baustelle wurde nicht gefunden.' }
-        }
-
-        const cleanedName = normalizeConstructionSiteName(name)
-        if (!cleanedName) {
-          return { ok: false, message: 'Bitte Baustellennamen ausfüllen.' }
-        }
-
-        const alreadyExists = constructionSites.some(
-          (item) =>
-            item.id !== id &&
-            item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
-        )
-        if (alreadyExists) {
-          return { ok: false, message: 'Diese Baustelle existiert bereits.' }
-        }
-
-        setConstructionSites((prev) =>
-          prev.map((item) => {
-            if (item.id !== id) return item
-            return { ...item, name: cleanedName }
-          }),
-        )
-
-        if (currentSite.name !== cleanedName) {
-          setRecords((prev) =>
-            prev.map((record) => {
-              if (record.constructionSiteId !== id) return record
-              return { ...record, constructionSiteName: cleanedName }
-            }),
-          )
-        }
-
-        return { ok: true }
-      },
-      deleteConstructionSite: ({ id }: DeleteConstructionSiteInput) => {
-        const currentSite = constructionSites.find((item) => item.id === id)
-        if (!currentSite) {
-          return { ok: false, message: 'Die Baustelle wurde nicht gefunden.' }
-        }
-
-        const hasHistory = records.some((record) => record.constructionSiteId === id)
-        if (hasHistory) {
-          return {
-            ok: false,
-            message: 'Baustelle kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
-          }
-        }
-
-        setConstructionSites((prev) => prev.filter((item) => item.id !== id))
-        return { ok: true }
-      },
-      updateRecordStatus: (recordId: number, status: RecordStatus) => {
-        setRecords((prev) =>
-          prev.map((record) => {
-            if (record.id !== recordId) return record
-            return { ...record, status }
-          }),
-        )
-      },
-      assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => {
-        setRecords((prev) =>
-          prev.map((record) => {
-            if (!recordIds.includes(record.id)) return record
-            return { ...record, deliveryNoteId }
-          }),
-        )
-      },
-      assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => {
-        setRecords((prev) =>
-          prev.map((record) => {
-            if (!recordIds.includes(record.id)) return record
-            return { ...record, invoiceId, invoiceReverseCharge: reverseCharge ?? false }
-          }),
-        )
-      },
-      assignCancel: (recordIds: number[], cancelId: string) => {
-        setRecords((prev) =>
-          prev.map((record) => {
-            if (!recordIds.includes(record.id)) return record
-            return { ...record, cancelId }
-          }),
-        )
-      },
-      updateNumberingSettings: (input: UpdateNumberingSettingsInput) => {
-        if (input.invoiceTemplate !== undefined && !input.invoiceTemplate.trim()) {
-          return { ok: false, message: 'Das Rechnungsnummer-Format darf nicht leer sein.' }
-        }
-        if (input.deliveryNoteTemplate !== undefined && !input.deliveryNoteTemplate.trim()) {
-          return { ok: false, message: 'Das Lieferschein-Format darf nicht leer sein.' }
-        }
-
-        setNumberingSettings((prev) => ({ ...prev, ...input }))
-        return { ok: true }
-      },
-      generateInvoiceNumber: () => {
-        const value = formatGeneratedNumber(
-          numberingSettings.invoiceTemplate,
-          numberingSettings.nextInvoiceNumber,
-          numberingSettings.numberPadding,
-        )
-        setNumberingSettings((prev) => ({ ...prev, nextInvoiceNumber: prev.nextInvoiceNumber + 1 }))
-        return value
-      },
-      generateDeliveryNoteNumber: () => {
-        const value = formatGeneratedNumber(
-          numberingSettings.deliveryNoteTemplate,
-          numberingSettings.nextDeliveryNoteNumber,
-          numberingSettings.numberPadding,
-        )
-        setNumberingSettings((prev) => ({ ...prev, nextDeliveryNoteNumber: prev.nextDeliveryNoteNumber + 1 }))
-        return value
-      },
+      createCompany: async (input) => createCompanyMutation.mutateAsync({ data: input }),
+      updateCompany: async (input) => updateCompanyMutation.mutateAsync({ data: input }),
+      deleteCompany: async (input) => deleteCompanyMutation.mutateAsync({ data: input }),
+      setCompanyPin: async (input) => setCompanyPinMutation.mutateAsync({ data: input }),
+      createProduct: async (input) => createProductMutation.mutateAsync({ data: input }),
+      updateProduct: async (input) => updateProductMutation.mutateAsync({ data: input }),
+      deleteProduct: async (input) => deleteProductMutation.mutateAsync({ data: input }),
+      createTruck: async (input) => createTruckMutation.mutateAsync({ data: input }),
+      updateTruck: async (input) => updateTruckMutation.mutateAsync({ data: input }),
+      deleteTruck: async (input) => deleteTruckMutation.mutateAsync({ data: input }),
+      createConstructionSite: async (input) => createSiteMutation.mutateAsync({ data: input }),
+      updateConstructionSite: async (input) => updateSiteMutation.mutateAsync({ data: input }),
+      deleteConstructionSite: async (input) => deleteSiteMutation.mutateAsync({ data: input }),
+      updateRecordStatus: (recordId, status) => updateRecordStatusMutation.mutate({ data: { recordId, status } }),
+      assignInvoice: (recordIds, invoiceId, reverseCharge) =>
+        assignInvoiceMutation.mutate({ data: { recordIds, invoiceId, reverseCharge } }),
+      assignCancel: (recordIds, cancelId) => assignCancelMutation.mutate({ data: { recordIds, cancelId } }),
+      updateNumberingSettings: async (input) => updateNumberingSettingsMutation.mutateAsync({ data: input }),
+      generateInvoiceNumber: async () => generateInvoiceNumberMutation.mutateAsync({}),
     }),
-    [hydrated, companies, isAdminLoggedIn, products, trucks, constructionSites, records, selectedCompany, numberingSettings],
+    [
+      hydrated,
+      companies,
+      selectedCompany,
+      isAdminLoggedIn,
+      products,
+      trucks,
+      constructionSites,
+      records,
+      numberingSettings,
+      customerSignInMutation,
+      customerSignOutMutation,
+      adminSignInMutation,
+      adminSignOutMutation,
+      createRecordMutation,
+      createTruckRecordMutation,
+      createCompanyMutation,
+      updateCompanyMutation,
+      deleteCompanyMutation,
+      setCompanyPinMutation,
+      createProductMutation,
+      updateProductMutation,
+      deleteProductMutation,
+      createTruckMutation,
+      updateTruckMutation,
+      deleteTruckMutation,
+      createSiteMutation,
+      updateSiteMutation,
+      deleteSiteMutation,
+      updateRecordStatusMutation,
+      assignInvoiceMutation,
+      assignCancelMutation,
+      updateNumberingSettingsMutation,
+      generateInvoiceNumberMutation,
+    ],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

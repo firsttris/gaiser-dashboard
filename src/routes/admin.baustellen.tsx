@@ -1,8 +1,15 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 
-export const Route = createFileRoute('/admin/baustellen')({ component: AdminSitesPage })
+export const Route = createFileRoute('/admin/baustellen')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminSitesPage,
+})
 
 function AdminSitesPage() {
   const { constructionSites, createConstructionSite, updateConstructionSite, deleteConstructionSite } = useAppState()
@@ -14,10 +21,10 @@ function AdminSitesPage() {
   const [editError, setEditError] = useState('')
   const [editSuccess, setEditSuccess] = useState('')
 
-  function submitConstructionSite(event: React.FormEvent<HTMLFormElement>) {
+  async function submitConstructionSite(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = createConstructionSite({ name: createName })
+    const result = await createConstructionSite({ name: createName })
     if (!result.ok) {
       setCreateError(result.message)
       setCreateSuccess('')
@@ -45,8 +52,8 @@ function AdminSitesPage() {
     setEditError('')
   }
 
-  function saveEdit(siteId: string) {
-    const result = updateConstructionSite({ id: siteId, name: editName })
+  async function saveEdit(siteId: string) {
+    const result = await updateConstructionSite({ id: siteId, name: editName })
     if (!result.ok) {
       setEditError(result.message)
       setEditSuccess('')
@@ -58,7 +65,7 @@ function AdminSitesPage() {
     cancelEdit()
   }
 
-  function removeConstructionSite(siteId: string) {
+  async function removeConstructionSite(siteId: string) {
     const site = constructionSites.find((item) => item.id === siteId)
     if (!site) return
 
@@ -66,7 +73,7 @@ function AdminSitesPage() {
       return
     }
 
-    const result = deleteConstructionSite({ id: site.id })
+    const result = await deleteConstructionSite({ id: site.id })
     if (!result.ok) {
       setEditError(result.message)
       setEditSuccess('')

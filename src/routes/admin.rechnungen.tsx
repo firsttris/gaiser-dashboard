@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useMemo, useState } from 'react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { DateRangeFilter } from '../components/date-range-filter'
@@ -11,7 +12,13 @@ import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
 
-export const Route = createFileRoute('/admin/rechnungen')({ component: AdminRechnungenPage })
+export const Route = createFileRoute('/admin/rechnungen')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminRechnungenPage,
+})
 
 function AdminRechnungenPage() {
   const { companies, records, updateRecordStatus, assignCancel } = useAppState()

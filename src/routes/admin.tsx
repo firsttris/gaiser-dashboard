@@ -1,7 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
-import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
@@ -20,14 +19,15 @@ const settingsNavItems = [
 
 function AdminPage() {
   const { isAdminLoggedIn, adminLogin, adminLogout } = useAppState()
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  function submitAdminLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function submitAdminLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = adminLogin(password)
+    const result = await adminLogin(email, password)
     if (!result.ok) {
       setAuthError(result.message)
       return
@@ -54,16 +54,26 @@ function AdminPage() {
               <p className="mt-3 text-slate-600">
                 Geschützter Bereich für Produktpflege und Kundenanlage.
               </p>
-              <p className="mt-4 text-sm text-slate-500">Initiales Passwort für Demo: admin</p>
             </div>
 
             <form onSubmit={submitAdminLogin} className="rounded-2xl border border-slate-200 bg-white p-5">
-              <label className="text-sm font-semibold text-slate-700">Admin-Passwort</label>
+              <label className="text-sm font-semibold text-slate-700">E-Mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="E-Mail eingeben"
+                autoComplete="username"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800"
+              />
+
+              <label className="mt-4 block text-sm font-semibold text-slate-700">Passwort</label>
               <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Passwort eingeben"
+                autoComplete="current-password"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800"
               />
 
@@ -165,7 +175,6 @@ function AdminPage() {
               />
 
               <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
-                <ClearDbButton compact />
                 <button
                   type="button"
                   onClick={() => {
@@ -207,7 +216,6 @@ function AdminPage() {
             />
 
             <div className="ml-auto flex items-center gap-4">
-              <ClearDbButton />
               <button
                 type="button"
                 onClick={adminLogout}

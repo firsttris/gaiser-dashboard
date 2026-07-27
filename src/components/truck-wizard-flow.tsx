@@ -47,10 +47,10 @@ export function TruckWizardFlow({
   const priceCategoryLabel = company.priceCategory === 'private' ? 'Privat' : 'Unternehmen'
   const total = validHours ? parsedHours * currentHourlyPrice : 0
 
-  function submitRecord() {
+  async function submitRecord() {
     if (!selectedTruck || !validHours || !validConstructionSiteName) return
 
-    const record = createTruckRecord({
+    const record = await createTruckRecord({
       truck: selectedTruck,
       hours: parsedHours,
       constructionSiteName,

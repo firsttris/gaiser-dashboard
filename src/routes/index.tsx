@@ -29,10 +29,10 @@ function App() {
     return companies.filter((company) => company.name.toLowerCase().includes(value))
   }, [companies, query])
 
-  function submitLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = login(selectedCompanyId ?? '', pin)
+    const result = await login(selectedCompanyId ?? '', pin)
     if (!result.ok) {
       setError(result.message)
       return
@@ -63,10 +63,6 @@ function App() {
             <p className="max-w-sm text-slate-600">
               Firma suchen, PIN eingeben, Vorgang anlegen. Lieferschein herunterladen.
             </p>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold">Demo-Hinweis</p>
-              <p>Beispiel: Krampfert Wohnbau GmbH, PIN 1234.</p>
-            </div>
           </div>
 
           <form onSubmit={submitLogin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">

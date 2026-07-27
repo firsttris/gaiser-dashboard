@@ -101,10 +101,10 @@ export function WizardFlow({
   const priceCategoryLabel = selectedCompany?.priceCategory === 'private' ? 'Privat' : 'Unternehmen'
   const total = validAmount ? parsedAmount * currentUnitPrice : 0
 
-  function submitRecord() {
+  async function submitRecord() {
     if (!selectedProduct || !validAmount || !validConstructionSiteName) return
 
-    const record = createRecord({
+    const record = await createRecord({
       type: flowType,
       product: selectedProduct,
       amount: parsedAmount,

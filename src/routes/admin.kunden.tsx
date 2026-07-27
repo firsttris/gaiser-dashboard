@@ -1,21 +1,29 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useAppState } from '../state/app-state'
 import { useCompanyForm } from '../hooks/use-company-form'
 import { CompanyInput, PinInput, PriceCategorySelect } from '../components/company-form-inputs'
 
-export const Route = createFileRoute('/admin/kunden')({ component: AdminKundenPage })
+export const Route = createFileRoute('/admin/kunden')({
+  beforeLoad: async ({ context }) => {
+    const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
+    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+  },
+  component: AdminKundenPage,
+})
 
 function AdminKundenPage() {
-  const { companies, createCompany, updateCompany, deleteCompany } = useAppState()
+  const { companies, createCompany, updateCompany, deleteCompany, setCompanyPin } = useAppState()
   const createForm = useCompanyForm()
   const editForm = useCompanyForm()
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
 
-  function submitCompany(event: React.FormEvent<HTMLFormElement>) {
+  async function submitCompany(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = createCompany({
+    const result = await createCompany({
       name: createForm.formState.name,
       customerNumber: createForm.formState.customerNumber,
       street: createForm.formState.street,
@@ -50,20 +58,18 @@ function AdminKundenPage() {
       street: company.street,
       postalCode: company.postalCode,
       city: company.city,
-      pin: company.pin,
       priceCategory: company.priceCategory,
     })
   }
 
-  function saveEditedCompany(companyId: string) {
-    const result = updateCompany({
+  async function saveEditedCompany(companyId: string) {
+    const result = await updateCompany({
       id: companyId,
       name: editForm.formState.name,
       customerNumber: editForm.formState.customerNumber,
       street: editForm.formState.street,
       postalCode: editForm.formState.postalCode,
       city: editForm.formState.city,
-      pin: editForm.formState.pin,
       priceCategory: editForm.formState.priceCategory,
     })
 
@@ -76,7 +82,7 @@ function AdminKundenPage() {
     cancelEdit()
   }
 
-  function removeCompany(companyId: string) {
+  async function removeCompany(companyId: string) {
     const company = companies.find((item) => item.id === companyId)
     if (!company) return
 
@@ -84,7 +90,7 @@ function AdminKundenPage() {
       return
     }
 
-    const result = deleteCompany({ id: companyId })
+    const result = await deleteCompany({ id: companyId })
     if (!result.ok) {
       editForm.setMessage(result.message, 'error')
       return
@@ -93,6 +99,27 @@ function AdminKundenPage() {
     if (editingCompanyId === companyId) cancelEdit()
 
     editForm.setMessage(`Kunde ${company.name} wurde gelöscht.`, 'success')
+  }
+
+  async function resetCompanyPin(companyId: string) {
+    const company = companies.find((item) => item.id === companyId)
+    if (!company) return
+
+    const pin = window.prompt(`Neue 4-stellige PIN fuer ${company.name}:`)
+    if (pin === null) return
+
+    if (!/^\d{4}$/.test(pin)) {
+      editForm.setMessage('Die PIN muss 4-stellig sein.', 'error')
+      return
+    }
+
+    const result = await setCompanyPin({ companyId, pin })
+    if (!result.ok) {
+      editForm.setMessage(result.message, 'error')
+      return
+    }
+
+    editForm.setMessage(`PIN fuer ${company.name} wurde zurueckgesetzt.`, 'success')
   }
 
   return (
@@ -244,18 +271,16 @@ function AdminKundenPage() {
             )}
 
             <p className="mt-3 text-xs text-slate-500">PIN</p>
-            {editingCompanyId === company.id ? (
-              <input
-                value={editForm.formState.pin}
-                onChange={(event) =>
-                  editForm.update({ pin: event.target.value.replace(/[^0-9]/g, '').slice(0, 4) })
-                }
-                inputMode="numeric"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            ) : (
-              <p className="text-sm font-semibold text-slate-800">{company.pin}</p>
-            )}
+            <div className="mt-1 flex items-center gap-2 whitespace-nowrap">
+              <p className="text-sm font-semibold text-slate-800">••••</p>
+              <button
+                type="button"
+                onClick={() => void resetCompanyPin(company.id)}
+                className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                PIN zuruecksetzen
+              </button>
+            </div>
 
             <p className="mt-3 text-xs text-slate-500">Tarifgruppe</p>
             {editingCompanyId === company.id ? (
@@ -278,7 +303,7 @@ function AdminKundenPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => saveEditedCompany(company.id)}
+                    onClick={() => void saveEditedCompany(company.id)}
                     className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
                   >
                     Speichern
@@ -302,7 +327,7 @@ function AdminKundenPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeCompany(company.id)}
+                    onClick={() => void removeCompany(company.id)}
                     className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                   >
                     Löschen
@@ -323,9 +348,9 @@ function AdminKundenPage() {
               <th className="w-40 px-3 py-2">Straße</th>
               <th className="w-20 px-3 py-2">PLZ</th>
               <th className="w-28 px-3 py-2">Ort</th>
-              <th className="w-20 px-3 py-2">PIN</th>
+              <th className="w-44 px-3 py-2">PIN</th>
               <th className="w-32 px-3 py-2">Tarifgruppe</th>
-              <th className="w-56 px-3 py-2 text-right">Aktionen</th>
+              <th className="w-44 px-3 py-2 text-right">Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -390,18 +415,16 @@ function AdminKundenPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  {editingCompanyId === company.id ? (
-                    <input
-                      value={editForm.formState.pin}
-                      onChange={(event) =>
-                        editForm.update({ pin: event.target.value.replace(/[^0-9]/g, '').slice(0, 4) })
-                      }
-                      inputMode="numeric"
-                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
-                    />
-                  ) : (
-                    <p className="flex h-10 items-center">{company.pin}</p>
-                  )}
+                  <div className="flex h-10 items-center gap-2 whitespace-nowrap">
+                    <p>••••</p>
+                    <button
+                      type="button"
+                      onClick={() => void resetCompanyPin(company.id)}
+                      className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                    >
+                      Zuruecksetzen
+                    </button>
+                  </div>
                 </td>
                 <td className="px-3 py-2">
                   {editingCompanyId === company.id ? (
@@ -418,20 +441,20 @@ function AdminKundenPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <div className="flex w-56 justify-end gap-2">
+                  <div className="flex justify-end gap-2">
                     {editingCompanyId === company.id ? (
                       <>
                         <button
                           type="button"
-                          onClick={() => saveEditedCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                          onClick={() => void saveEditedCompany(company.id)}
+                          className="min-w-20 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-black"
                         >
                           Speichern
                         </button>
                         <button
                           type="button"
                           onClick={cancelEdit}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                          className="min-w-20 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                         >
                           Abbrechen
                         </button>
@@ -441,16 +464,20 @@ function AdminKundenPage() {
                         <button
                           type="button"
                           onClick={() => startEditCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                          aria-label="Bearbeiten"
+                          title="Bearbeiten"
+                          className="rounded-lg bg-slate-100 p-2 text-slate-700 hover:bg-slate-200"
                         >
-                          Bearbeiten
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeCompany(company.id)}
-                          className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          onClick={() => void removeCompany(company.id)}
+                          aria-label="Löschen"
+                          title="Löschen"
+                          className="rounded-lg bg-red-50 p-2 text-red-700 hover:bg-red-100"
                         >
-                          Löschen
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                       </>
                     )}
