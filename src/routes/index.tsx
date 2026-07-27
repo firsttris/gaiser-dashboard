@@ -12,6 +12,7 @@ function App() {
   const { companies, login, isLoggingIn, isLoggedIn } = useAppState()
   const [query, setQuery] = useState('')
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
+  const [isCompanyFieldFocused, setIsCompanyFieldFocused] = useState(false)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
 
@@ -21,14 +22,14 @@ function App() {
     if (isLoggedIn) void navigate({ to: '/kunde/neuer-vorgang' })
   }, [isLoggedIn, navigate])
 
-  
-
   const results = useMemo(() => {
     const value = query.trim().toLowerCase()
-    if (value.length < 2) return []
+    if (!value) return companies
 
     return companies.filter((company) => company.name.toLowerCase().includes(value))
   }, [companies, query])
+
+  const showCompanyResults = selectedCompanyId === null && isCompanyFieldFocused && results.length > 0
 
   async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -81,19 +82,23 @@ function App() {
                   setQuery(event.target.value)
                   setSelectedCompanyId(null)
                 }}
+                onFocus={() => setIsCompanyFieldFocused(true)}
+                onBlur={() => setIsCompanyFieldFocused(false)}
                 placeholder="z.B. Krampfert Wohnbau GmbH"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-amber-500"
               />
 
-              {selectedCompanyId === null && results.length > 0 && (
+              {showCompanyResults && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 space-y-1 overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
                   {results.map((company) => (
                     <button
                       type="button"
                       key={company.id}
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
                         setSelectedCompanyId(company.id)
                         setQuery(company.name)
+                        setIsCompanyFieldFocused(false)
                       }}
                       className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
                         selectedCompanyId === company.id
