@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
+import { Spinner } from '../components/spinner'
 
 import appCss from '../styles.css?url'
 
@@ -69,7 +70,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function HydrationGate({ children }: { children: React.ReactNode }) {
   const { hydrated } = useAppState()
-  if (!hydrated) return null
+  if (!hydrated) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner className="h-8 w-8 text-slate-400" />
+      </div>
+    )
+  }
   return <>{children}</>
 }
 

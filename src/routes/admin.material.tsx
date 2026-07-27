@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 import { useProductForm } from '../hooks/use-product-form'
 import { ProductNameInput, ProductUnitInput, ProductFlowSelect, PriceField } from '../components/product-form-inputs'
+import { Spinner } from '../components/spinner'
 import type { Product } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/material')({
@@ -31,9 +32,11 @@ type ProductListProps = {
   onCancel: () => void
   onStartEdit: (productId: number) => void
   onRemove: (productId: number) => void
+  isSaving: boolean
+  isRemoving: boolean
 }
 
-function ProductCards({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: ProductListProps) {
+function ProductCards({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: ProductListProps) {
   return (
     <div className="mt-3 space-y-3 md:hidden">
       {items.map((product) => (
@@ -90,8 +93,10 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
                 <button
                   type="button"
                   onClick={() => onSave(product.id)}
-                  className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                  disabled={isSaving}
+                  className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                 >
+                  {isSaving && <Spinner className="h-3.5 w-3.5" />}
                   Speichern
                 </button>
                 <button
@@ -114,8 +119,10 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
                 <button
                   type="button"
                   onClick={() => onRemove(product.id)}
-                  className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                  disabled={isRemoving}
+                  className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
+                  {isRemoving && <Spinner className="h-3.5 w-3.5" />}
                   Löschen
                 </button>
               </>
@@ -127,7 +134,7 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
   )
 }
 
-function ProductTable({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: ProductListProps) {
+function ProductTable({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: ProductListProps) {
   return (
     <div className="mt-3 hidden overflow-x-auto md:block">
       <table className="w-full min-w-3xl table-fixed border-collapse text-sm">
@@ -190,8 +197,10 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
                       <button
                         type="button"
                         onClick={() => onSave(product.id)}
-                        className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                        disabled={isSaving}
+                        className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                       >
+                        {isSaving && <Spinner className="h-3.5 w-3.5" />}
                         Speichern
                       </button>
                       <button
@@ -214,8 +223,10 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
                       <button
                         type="button"
                         onClick={() => onRemove(product.id)}
-                        className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                        disabled={isRemoving}
+                        className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
+                        {isRemoving && <Spinner className="h-3.5 w-3.5" />}
                         Löschen
                       </button>
                     </>
@@ -231,7 +242,8 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
 }
 
 function AdminProductsPage() {
-  const { products, createProduct, updateProduct, deleteProduct } = useAppState()
+  const { products, createProduct, isCreatingProduct, updateProduct, isUpdatingProduct, deleteProduct, isDeletingProduct } =
+    useAppState()
   const createForm = useProductForm()
   const editForm = useProductForm()
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
@@ -332,6 +344,8 @@ function AdminProductsPage() {
     onCancel: cancelEdit,
     onStartEdit: startEditProduct,
     onRemove: removeProduct,
+    isSaving: isUpdatingProduct,
+    isRemoving: isDeletingProduct,
   }
 
   return (
@@ -381,8 +395,10 @@ function AdminProductsPage() {
         <div className="md:col-span-6">
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
+            disabled={isCreatingProduct}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingProduct && <Spinner className="h-4 w-4" />}
             Produkt anlegen
           </button>
         </div>

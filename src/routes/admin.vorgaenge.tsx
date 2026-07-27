@@ -10,6 +10,7 @@ import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusLabel } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/admin/vorgaenge')({
   beforeLoad: async ({ context }) => {
@@ -29,6 +30,8 @@ function AdminVorgaengePage() {
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -98,18 +101,28 @@ function AdminVorgaengePage() {
     clearSelection()
   }
 
-  function handleDeliveryNoteClick(deliveryNoteId: string) {
+  async function handleDeliveryNoteClick(deliveryNoteId: string) {
     const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
     if (!group.length) return
     const customer = companies.find((c) => c.name === group[0].company)
-    downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
+    setDownloadingDocId(deliveryNoteId)
+    try {
+      await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
+    } finally {
+      setDownloadingDocId(null)
+    }
   }
 
-  function handleInvoiceClick(invoiceId: string) {
+  async function handleInvoiceClick(invoiceId: string) {
     const group = records.filter((r) => r.invoiceId === invoiceId)
     if (!group.length) return
     const customer = companies.find((c) => c.name === group[0].company)
-    downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
+    setDownloadingDocId(invoiceId)
+    try {
+      await downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
+    } finally {
+      setDownloadingDocId(null)
+    }
   }
 
   function handleCancelClick(cancelId: string) {
@@ -240,9 +253,10 @@ function AdminVorgaengePage() {
             onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
             onToggle={toggleRecordSelection}
             showCompanyColumn
-            onDeliveryNoteClick={handleDeliveryNoteClick}
-            onInvoiceClick={handleInvoiceClick}
+            onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
+            onInvoiceClick={(id) => void handleInvoiceClick(id)}
             onCancelClick={handleCancelClick}
+            downloadingDocId={downloadingDocId}
           />
         )}
       </article>
@@ -278,18 +292,26 @@ function AdminVorgaengePage() {
               <button
                 type="button"
                 onClick={() => setSammelrechnungOpen(false)}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                disabled={isCreatingInvoice}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Abbrechen
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  createSammelrechnung(sammelReverseCharge)
-                  setSammelrechnungOpen(false)
+                onClick={async () => {
+                  setIsCreatingInvoice(true)
+                  try {
+                    await createSammelrechnung(sammelReverseCharge)
+                    setSammelrechnungOpen(false)
+                  } finally {
+                    setIsCreatingInvoice(false)
+                  }
                 }}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                disabled={isCreatingInvoice}
+                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isCreatingInvoice && <Spinner className="h-4 w-4" />}
                 Rechnung erstellen
               </button>
             </div>

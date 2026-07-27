@@ -222,28 +222,46 @@ type AppState = {
   records: RecordItem[]
   numberingSettings: NumberingSettings
   login: (companyId: string, pin: string) => Promise<LoginResult>
+  isLoggingIn: boolean
   logout: () => void
   adminLogin: (email: string, password: string) => Promise<LoginResult>
+  isAdminLoggingIn: boolean
   adminLogout: () => void
   createRecord: (input: CreateRecordInput) => Promise<RecordItem | null>
+  isCreatingRecord: boolean
   createTruckRecord: (input: CreateTruckRecordInput) => Promise<RecordItem | null>
+  isCreatingTruckRecord: boolean
   createCompany: (input: CreateCompanyInput) => Promise<CreateCompanyResult>
+  isCreatingCompany: boolean
   updateCompany: (input: UpdateCompanyInput) => Promise<CreateCompanyResult>
+  isUpdatingCompany: boolean
   deleteCompany: (input: DeleteCompanyInput) => Promise<CreateCompanyResult>
+  isDeletingCompany: boolean
   setCompanyPin: (input: SetCompanyPinInput) => Promise<CreateCompanyResult>
+  isSettingCompanyPin: boolean
   createProduct: (input: CreateProductInput) => Promise<CreateCompanyResult>
+  isCreatingProduct: boolean
   updateProduct: (input: UpdateProductInput) => Promise<CreateCompanyResult>
+  isUpdatingProduct: boolean
   deleteProduct: (input: DeleteProductInput) => Promise<CreateCompanyResult>
+  isDeletingProduct: boolean
   createTruck: (input: CreateTruckInput) => Promise<CreateCompanyResult>
+  isCreatingTruck: boolean
   updateTruck: (input: UpdateTruckInput) => Promise<CreateCompanyResult>
+  isUpdatingTruck: boolean
   deleteTruck: (input: DeleteTruckInput) => Promise<CreateCompanyResult>
+  isDeletingTruck: boolean
   createConstructionSite: (input: CreateConstructionSiteInput) => Promise<CreateCompanyResult>
+  isCreatingConstructionSite: boolean
   updateConstructionSite: (input: UpdateConstructionSiteInput) => Promise<CreateCompanyResult>
+  isUpdatingConstructionSite: boolean
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => Promise<CreateCompanyResult>
+  isDeletingConstructionSite: boolean
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
   assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
   assignCancel: (recordIds: number[], cancelId: string) => void
   updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
+  isUpdatingNumberingSettings: boolean
   generateInvoiceNumber: () => Promise<string>
 }
 
@@ -446,37 +464,55 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       records,
       numberingSettings,
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
+      isLoggingIn: customerSignInMutation.isPending,
       logout: () => customerSignOutMutation.mutate({}),
       adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
+      isAdminLoggingIn: adminSignInMutation.isPending,
       adminLogout: () => adminSignOutMutation.mutate({}),
       createRecord: async ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
         return createRecordMutation.mutateAsync({
           data: { type, productId: product.id, amount, constructionSiteName, companyId: company?.id },
         })
       },
+      isCreatingRecord: createRecordMutation.isPending,
       createTruckRecord: async ({ truck, hours, constructionSiteName, company }: CreateTruckRecordInput) => {
         return createTruckRecordMutation.mutateAsync({
           data: { truckId: truck.id, hours, constructionSiteName, companyId: company?.id },
         })
       },
+      isCreatingTruckRecord: createTruckRecordMutation.isPending,
       createCompany: async (input) => createCompanyMutation.mutateAsync({ data: input }),
+      isCreatingCompany: createCompanyMutation.isPending,
       updateCompany: async (input) => updateCompanyMutation.mutateAsync({ data: input }),
+      isUpdatingCompany: updateCompanyMutation.isPending,
       deleteCompany: async (input) => deleteCompanyMutation.mutateAsync({ data: input }),
+      isDeletingCompany: deleteCompanyMutation.isPending,
       setCompanyPin: async (input) => setCompanyPinMutation.mutateAsync({ data: input }),
+      isSettingCompanyPin: setCompanyPinMutation.isPending,
       createProduct: async (input) => createProductMutation.mutateAsync({ data: input }),
+      isCreatingProduct: createProductMutation.isPending,
       updateProduct: async (input) => updateProductMutation.mutateAsync({ data: input }),
+      isUpdatingProduct: updateProductMutation.isPending,
       deleteProduct: async (input) => deleteProductMutation.mutateAsync({ data: input }),
+      isDeletingProduct: deleteProductMutation.isPending,
       createTruck: async (input) => createTruckMutation.mutateAsync({ data: input }),
+      isCreatingTruck: createTruckMutation.isPending,
       updateTruck: async (input) => updateTruckMutation.mutateAsync({ data: input }),
+      isUpdatingTruck: updateTruckMutation.isPending,
       deleteTruck: async (input) => deleteTruckMutation.mutateAsync({ data: input }),
+      isDeletingTruck: deleteTruckMutation.isPending,
       createConstructionSite: async (input) => createSiteMutation.mutateAsync({ data: input }),
+      isCreatingConstructionSite: createSiteMutation.isPending,
       updateConstructionSite: async (input) => updateSiteMutation.mutateAsync({ data: input }),
+      isUpdatingConstructionSite: updateSiteMutation.isPending,
       deleteConstructionSite: async (input) => deleteSiteMutation.mutateAsync({ data: input }),
+      isDeletingConstructionSite: deleteSiteMutation.isPending,
       updateRecordStatus: (recordId, status) => updateRecordStatusMutation.mutate({ data: { recordId, status } }),
       assignInvoice: (recordIds, invoiceId, reverseCharge) =>
         assignInvoiceMutation.mutate({ data: { recordIds, invoiceId, reverseCharge } }),
       assignCancel: (recordIds, cancelId) => assignCancelMutation.mutate({ data: { recordIds, cancelId } }),
       updateNumberingSettings: async (input) => updateNumberingSettingsMutation.mutateAsync({ data: input }),
+      isUpdatingNumberingSettings: updateNumberingSettingsMutation.isPending,
       generateInvoiceNumber: async () => generateInvoiceNumberMutation.mutateAsync({}),
     }),
     [

@@ -1,5 +1,6 @@
 import type { RecordItem, RecordStatus } from '../state/app-state'
 import { flowLabel, money, statusBadge, statusStages } from '../utils/history-utils'
+import { Spinner } from './spinner'
 
 interface Props {
   records: RecordItem[]
@@ -12,12 +13,43 @@ interface Props {
   onDeliveryNoteClick?: (deliveryNoteId: string) => void
   onInvoiceClick?: (invoiceId: string) => void
   onCancelClick?: (cancelId: string) => void
+  downloadingDocId?: string | null
 }
 
 export function shortDocId(id: string) {
   const parts = id.split('-')
   if (parts.length >= 3) return `${parts[0]}-${parts[1].slice(4)}-${parts[2].slice(-4)}`
   return id
+}
+
+const DOC_COLOR_CLASSES = {
+  amber: 'bg-amber-100 text-amber-700',
+  blue: 'bg-blue-100 text-blue-700',
+  red: 'bg-red-100 text-red-700',
+} as const
+
+function DocButton({
+  id,
+  color,
+  onClick,
+  loading,
+}: {
+  id: string
+  color: keyof typeof DOC_COLOR_CLASSES
+  onClick: () => void
+  loading: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className={`flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 font-mono text-xs hover:opacity-75 disabled:cursor-not-allowed ${DOC_COLOR_CLASSES[color]}`}
+    >
+      {loading && <Spinner className="h-3 w-3" />}
+      {shortDocId(id)}
+    </button>
+  )
 }
 
 export function HistoryTable({
@@ -31,6 +63,7 @@ export function HistoryTable({
   onDeliveryNoteClick,
   onInvoiceClick,
   onCancelClick,
+  downloadingDocId = null,
 }: Props) {
   return (
     <>
@@ -54,31 +87,28 @@ export function HistoryTable({
                   <p className="mt-1 text-xs text-slate-600">Baustelle: {record.constructionSiteName || '-'}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {record.deliveryNoteId && (
-                      <button
-                        type="button"
+                      <DocButton
+                        id={record.deliveryNoteId}
+                        color="amber"
                         onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                        className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
-                      >
-                        {shortDocId(record.deliveryNoteId!)}
-                      </button>
+                        loading={downloadingDocId === record.deliveryNoteId}
+                      />
                     )}
                     {record.invoiceId && (
-                      <button
-                        type="button"
+                      <DocButton
+                        id={record.invoiceId}
+                        color="blue"
                         onClick={() => onInvoiceClick?.(record.invoiceId!)}
-                        className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
-                      >
-                        {shortDocId(record.invoiceId)}
-                      </button>
+                        loading={downloadingDocId === record.invoiceId}
+                      />
                     )}
                     {record.cancelId && (
-                      <button
-                        type="button"
+                      <DocButton
+                        id={record.cancelId}
+                        color="red"
                         onClick={() => onCancelClick?.(record.cancelId!)}
-                        className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
-                      >
-                        {shortDocId(record.cancelId)}
-                      </button>
+                        loading={downloadingDocId === record.cancelId}
+                      />
                     )}
                   </div>
                 </div>
@@ -221,31 +251,28 @@ export function HistoryTable({
                   <td className="px-2 py-2">
                     <div className="flex flex-wrap gap-1">
                       {record.deliveryNoteId && (
-                        <button
-                          type="button"
+                        <DocButton
+                          id={record.deliveryNoteId}
+                          color="amber"
                           onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                          className="cursor-pointer rounded bg-amber-100 px-1 py-0.5 font-mono text-xs text-amber-700 hover:opacity-75"
-                        >
-                          {shortDocId(record.deliveryNoteId!)}
-                        </button>
+                          loading={downloadingDocId === record.deliveryNoteId}
+                        />
                       )}
                       {record.invoiceId && (
-                        <button
-                          type="button"
+                        <DocButton
+                          id={record.invoiceId}
+                          color="blue"
                           onClick={() => onInvoiceClick?.(record.invoiceId!)}
-                          className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
-                        >
-                          {shortDocId(record.invoiceId)}
-                        </button>
+                          loading={downloadingDocId === record.invoiceId}
+                        />
                       )}
                       {record.cancelId && (
-                        <button
-                          type="button"
+                        <DocButton
+                          id={record.cancelId}
+                          color="red"
                           onClick={() => onCancelClick?.(record.cancelId!)}
-                          className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
-                        >
-                          {shortDocId(record.cancelId)}
-                        </button>
+                          loading={downloadingDocId === record.cancelId}
+                        />
                       )}
                     </div>
                   </td>

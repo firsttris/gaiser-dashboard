@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
 import { useAppState } from '../state/app-state'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/admin/baustellen')({
   beforeLoad: async ({ context }) => {
@@ -12,7 +13,15 @@ export const Route = createFileRoute('/admin/baustellen')({
 })
 
 function AdminSitesPage() {
-  const { constructionSites, createConstructionSite, updateConstructionSite, deleteConstructionSite } = useAppState()
+  const {
+    constructionSites,
+    createConstructionSite,
+    isCreatingConstructionSite,
+    updateConstructionSite,
+    isUpdatingConstructionSite,
+    deleteConstructionSite,
+    isDeletingConstructionSite,
+  } = useAppState()
   const [createName, setCreateName] = useState('')
   const [createError, setCreateError] = useState('')
   const [createSuccess, setCreateSuccess] = useState('')
@@ -109,8 +118,10 @@ function AdminSitesPage() {
         <div className="md:col-span-1 md:self-end">
           <button
             type="submit"
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
+            disabled={isCreatingConstructionSite}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingConstructionSite && <Spinner className="h-4 w-4" />}
             Baustelle anlegen
           </button>
         </div>
@@ -141,8 +152,10 @@ function AdminSitesPage() {
                   <button
                     type="button"
                     onClick={() => saveEdit(site.id)}
-                    className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                    disabled={isUpdatingConstructionSite}
+                    className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {isUpdatingConstructionSite && <Spinner className="h-3.5 w-3.5" />}
                     Speichern
                   </button>
                   <button
@@ -165,8 +178,10 @@ function AdminSitesPage() {
                   <button
                     type="button"
                     onClick={() => removeConstructionSite(site.id)}
-                    className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                    disabled={isDeletingConstructionSite}
+                    className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {isDeletingConstructionSite && <Spinner className="h-3.5 w-3.5" />}
                     Löschen
                   </button>
                 </>
@@ -205,8 +220,10 @@ function AdminSitesPage() {
                         <button
                           type="button"
                           onClick={() => saveEdit(site.id)}
-                          className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                          disabled={isUpdatingConstructionSite}
+                          className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                         >
+                          {isUpdatingConstructionSite && <Spinner className="h-3.5 w-3.5" />}
                           Speichern
                         </button>
                         <button
@@ -229,8 +246,10 @@ function AdminSitesPage() {
                         <button
                           type="button"
                           onClick={() => removeConstructionSite(site.id)}
-                          className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                          disabled={isDeletingConstructionSite}
+                          className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                         >
+                          {isDeletingConstructionSite && <Spinner className="h-3.5 w-3.5" />}
                           Löschen
                         </button>
                       </>

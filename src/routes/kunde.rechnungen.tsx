@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { DateRangeFilter } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
@@ -32,6 +32,7 @@ function RechnungenPage() {
   const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(allGroups)
 
   const areAllVisibleSelected = filteredGroups.length > 0 && filteredGroups.every((g) => selectedIds.has(g.id))
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
@@ -39,6 +40,15 @@ function RechnungenPage() {
     const stamp = new Date().toISOString().slice(0, 10)
     const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
+  }
+
+  async function handleInvoiceDownload(id: string, items: RecordItem[], deliveryNoteRefs: string) {
+    setDownloadingDocId(id)
+    try {
+      await downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+    } finally {
+      setDownloadingDocId(null)
+    }
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
@@ -49,7 +59,8 @@ function RechnungenPage() {
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)}
+          onClick={() => void handleInvoiceDownload(id, items, deliveryNoteRefs)}
+          loading={downloadingDocId === id}
         />
         {cancelId && (
           <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />

@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useEffect, useState } from 'react'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/admin/einstellungen')({
   beforeLoad: async ({ context }) => {
@@ -19,7 +20,7 @@ const TOKEN_HINTS = [
 ]
 
 function AdminEinstellungenPage() {
-  const { numberingSettings, updateNumberingSettings } = useAppState()
+  const { numberingSettings, updateNumberingSettings, isUpdatingNumberingSettings } = useAppState()
 
   const [invoiceTemplate, setInvoiceTemplate] = useState(numberingSettings.invoiceTemplate)
   const [deliveryNoteTemplate, setDeliveryNoteTemplate] = useState(numberingSettings.deliveryNoteTemplate)
@@ -144,8 +145,10 @@ function AdminEinstellungenPage() {
         <div className="md:col-span-2">
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
+            disabled={isUpdatingNumberingSettings}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isUpdatingNumberingSettings && <Spinner className="h-4 w-4" />}
             Speichern
           </button>
         </div>

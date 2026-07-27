@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { Spinner } from './spinner'
 
 function money(value: number) {
   return new Intl.NumberFormat('de-DE', {
@@ -21,9 +22,10 @@ export function TruckWizardFlow({
   onExit: () => void
   vorgaengeTo: string
 }) {
-  const { trucks, constructionSites, createTruckRecord } = useAppState()
+  const { trucks, constructionSites, createTruckRecord, isCreatingTruckRecord } = useAppState()
 
   const [step, setStep] = useState(1)
+  const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedTruckId, setSelectedTruckId] = useState(() => trucks[0]?.id ?? 0)
   const [hours, setHours] = useState('')
   const [constructionSiteName, setConstructionSiteName] = useState('')
@@ -71,9 +73,14 @@ export function TruckWizardFlow({
     setConstructionSiteName('')
   }
 
-  function redownloadDeliveryNote() {
+  async function redownloadDeliveryNote() {
     if (!successRecord) return
-    void downloadCombinedDeliveryNote([successRecord.record], company.name, successRecord.record.deliveryNoteId, company)
+    setIsDownloadingNote(true)
+    try {
+      await downloadCombinedDeliveryNote([successRecord.record], company.name, successRecord.record.deliveryNoteId, company)
+    } finally {
+      setIsDownloadingNote(false)
+    }
   }
 
   if (step === 1) {
@@ -195,9 +202,10 @@ export function TruckWizardFlow({
           <button
             type="button"
             onClick={submitRecord}
-            disabled={!validHours || !validConstructionSiteName}
-            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+            disabled={!validHours || !validConstructionSiteName || isCreatingTruckRecord}
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingTruckRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
           </button>
         </div>
@@ -245,9 +253,11 @@ export function TruckWizardFlow({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={redownloadDeliveryNote}
-            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+            onClick={() => void redownloadDeliveryNote()}
+            disabled={isDownloadingNote}
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
           </button>
           <button

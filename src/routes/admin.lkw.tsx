@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 import { useTruckForm } from '../hooks/use-truck-form'
 import { ProductNameInput, PriceField } from '../components/product-form-inputs'
+import { Spinner } from '../components/spinner'
 import type { Truck } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/lkw')({
@@ -29,9 +30,11 @@ type TruckListProps = {
   onCancel: () => void
   onStartEdit: (truckId: number) => void
   onRemove: (truckId: number) => void
+  isSaving: boolean
+  isRemoving: boolean
 }
 
-function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: TruckListProps) {
+function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: TruckListProps) {
   return (
     <div className="mt-3 space-y-3 md:hidden">
       {items.map((truck) => (
@@ -72,8 +75,10 @@ function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, on
                 <button
                   type="button"
                   onClick={() => onSave(truck.id)}
-                  className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                  disabled={isSaving}
+                  className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                 >
+                  {isSaving && <Spinner className="h-3.5 w-3.5" />}
                   Speichern
                 </button>
                 <button
@@ -96,8 +101,10 @@ function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, on
                 <button
                   type="button"
                   onClick={() => onRemove(truck.id)}
-                  className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                  disabled={isRemoving}
+                  className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
+                  {isRemoving && <Spinner className="h-3.5 w-3.5" />}
                   Löschen
                 </button>
               </>
@@ -109,7 +116,7 @@ function TruckCards({ items, editingTruckId, editFormState, onEditFormUpdate, on
   )
 }
 
-function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: TruckListProps) {
+function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: TruckListProps) {
   return (
     <div className="mt-3 hidden overflow-x-auto md:block">
       <table className="w-full min-w-3xl table-fixed border-collapse text-sm">
@@ -156,8 +163,10 @@ function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, on
                       <button
                         type="button"
                         onClick={() => onSave(truck.id)}
-                        className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                        disabled={isSaving}
+                        className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                       >
+                        {isSaving && <Spinner className="h-3.5 w-3.5" />}
                         Speichern
                       </button>
                       <button
@@ -180,8 +189,10 @@ function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, on
                       <button
                         type="button"
                         onClick={() => onRemove(truck.id)}
-                        className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                        disabled={isRemoving}
+                        className="flex min-w-24 items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
+                        {isRemoving && <Spinner className="h-3.5 w-3.5" />}
                         Löschen
                       </button>
                     </>
@@ -197,7 +208,7 @@ function TruckTable({ items, editingTruckId, editFormState, onEditFormUpdate, on
 }
 
 function AdminTrucksPage() {
-  const { trucks, createTruck, updateTruck, deleteTruck } = useAppState()
+  const { trucks, createTruck, isCreatingTruck, updateTruck, isUpdatingTruck, deleteTruck, isDeletingTruck } = useAppState()
   const createForm = useTruckForm()
   const editForm = useTruckForm()
   const [editingTruckId, setEditingTruckId] = useState<number | null>(null)
@@ -288,6 +299,8 @@ function AdminTrucksPage() {
     onCancel: cancelEdit,
     onStartEdit: startEditTruck,
     onRemove: removeTruck,
+    isSaving: isUpdatingTruck,
+    isRemoving: isDeletingTruck,
   }
 
   return (
@@ -320,8 +333,10 @@ function AdminTrucksPage() {
         <div className="md:col-span-6">
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
+            disabled={isCreatingTruck}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingTruck && <Spinner className="h-4 w-4" />}
             LKW anlegen
           </button>
         </div>

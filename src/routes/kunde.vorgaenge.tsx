@@ -52,17 +52,28 @@ function HistoryPage() {
   } = useRecordSelection(filteredRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
-  function handleDeliveryNoteClick(deliveryNoteId: string) {
+  async function handleDeliveryNoteClick(deliveryNoteId: string) {
     const group = companyRecords.filter((r) => r.deliveryNoteId === deliveryNoteId)
     if (group.length === 0) return
-    downloadCombinedDeliveryNote(group, selectedCompany?.name ?? '', deliveryNoteId, selectedCompany ?? undefined)
+    setDownloadingDocId(deliveryNoteId)
+    try {
+      await downloadCombinedDeliveryNote(group, selectedCompany?.name ?? '', deliveryNoteId, selectedCompany ?? undefined)
+    } finally {
+      setDownloadingDocId(null)
+    }
   }
 
-  function handleInvoiceClick(invoiceId: string) {
+  async function handleInvoiceClick(invoiceId: string) {
     const group = companyRecords.filter((r) => r.invoiceId === invoiceId)
     if (group.length === 0) return
-    downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
+    setDownloadingDocId(invoiceId)
+    try {
+      await downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
+    } finally {
+      setDownloadingDocId(null)
+    }
   }
 
   function handleCancelClick(cancelId: string) {
@@ -181,9 +192,10 @@ function HistoryPage() {
             areAllVisibleSelected={areAllVisibleSelected}
             onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
             onToggle={toggleRecordSelection}
-            onDeliveryNoteClick={handleDeliveryNoteClick}
-            onInvoiceClick={handleInvoiceClick}
+            onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
+            onInvoiceClick={(id) => void handleInvoiceClick(id)}
             onCancelClick={handleCancelClick}
+            downloadingDocId={downloadingDocId}
           />
         )}
       </section>

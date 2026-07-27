@@ -23,6 +23,7 @@ export const Route = createFileRoute('/admin/rechnungen')({
 function AdminRechnungenPage() {
   const { companies, records, updateRecordStatus, assignCancel } = useAppState()
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   const companyOptions = useMemo(
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
@@ -79,6 +80,25 @@ function AdminRechnungenPage() {
     downloadCsvFile(`admin-rechnungen-${stamp}.csv`, csv)
   }
 
+  async function handleInvoiceDownload(id: string, items: RecordItem[], customer: ReturnType<typeof companies.find>, deliveryNoteRefs: string) {
+    setDownloadingDocId(id)
+    try {
+      await downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+    } finally {
+      setDownloadingDocId(null)
+    }
+  }
+
+  async function handleDeliveryNoteDownload(deliveryNoteId: string, companyName: string, customer: ReturnType<typeof companies.find>) {
+    setDownloadingDocId(deliveryNoteId)
+    try {
+      const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
+      await downloadCombinedDeliveryNote(group, companyName, deliveryNoteId, customer)
+    } finally {
+      setDownloadingDocId(null)
+    }
+  }
+
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const customer = companies.find((c) => c.name === items[0].company)
@@ -89,17 +109,16 @@ function AdminRechnungenPage() {
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)}
+          onClick={() => void handleInvoiceDownload(id, items, customer, deliveryNoteRefs)}
+          loading={downloadingDocId === id}
         />
         {deliveryNoteIds.map((deliveryNoteId) => (
           <DocLinkButton
             key={deliveryNoteId}
             id={deliveryNoteId}
             color="amber"
-            onClick={() => {
-              const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
-              downloadCombinedDeliveryNote(group, items[0].company, deliveryNoteId, customer)
-            }}
+            onClick={() => void handleDeliveryNoteDownload(deliveryNoteId, items[0].company, customer)}
+            loading={downloadingDocId === deliveryNoteId}
           />
         ))}
         {cancelId && (

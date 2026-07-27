@@ -5,6 +5,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useAppState } from '../state/app-state'
 import { useCompanyForm } from '../hooks/use-company-form'
 import { CompanyInput, PinInput, PriceCategorySelect } from '../components/company-form-inputs'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/admin/kunden')({
   beforeLoad: async ({ context }) => {
@@ -15,7 +16,17 @@ export const Route = createFileRoute('/admin/kunden')({
 })
 
 function AdminKundenPage() {
-  const { companies, createCompany, updateCompany, deleteCompany, setCompanyPin } = useAppState()
+  const {
+    companies,
+    createCompany,
+    isCreatingCompany,
+    updateCompany,
+    isUpdatingCompany,
+    deleteCompany,
+    isDeletingCompany,
+    setCompanyPin,
+    isSettingCompanyPin,
+  } = useAppState()
   const createForm = useCompanyForm()
   const editForm = useCompanyForm()
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
@@ -194,8 +205,10 @@ function AdminKundenPage() {
         <div className="md:col-span-6">
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
+            disabled={isCreatingCompany}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingCompany && <Spinner className="h-4 w-4" />}
             Kunde anlegen
           </button>
         </div>
@@ -276,8 +289,10 @@ function AdminKundenPage() {
               <button
                 type="button"
                 onClick={() => void resetCompanyPin(company.id)}
-                className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                disabled={isSettingCompanyPin}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isSettingCompanyPin && <Spinner className="h-3 w-3" />}
                 PIN zuruecksetzen
               </button>
             </div>
@@ -304,8 +319,10 @@ function AdminKundenPage() {
                   <button
                     type="button"
                     onClick={() => void saveEditedCompany(company.id)}
-                    className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                    disabled={isUpdatingCompany}
+                    className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {isUpdatingCompany && <Spinner className="h-3.5 w-3.5" />}
                     Speichern
                   </button>
                   <button
@@ -328,8 +345,10 @@ function AdminKundenPage() {
                   <button
                     type="button"
                     onClick={() => void removeCompany(company.id)}
-                    className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                    disabled={isDeletingCompany}
+                    className="flex min-w-24 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {isDeletingCompany && <Spinner className="h-3.5 w-3.5" />}
                     Löschen
                   </button>
                 </>
@@ -420,8 +439,10 @@ function AdminKundenPage() {
                     <button
                       type="button"
                       onClick={() => void resetCompanyPin(company.id)}
-                      className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                      disabled={isSettingCompanyPin}
+                      className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
+                      {isSettingCompanyPin && <Spinner className="h-3 w-3" />}
                       Zuruecksetzen
                     </button>
                   </div>
@@ -447,8 +468,10 @@ function AdminKundenPage() {
                         <button
                           type="button"
                           onClick={() => void saveEditedCompany(company.id)}
-                          className="min-w-20 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                          disabled={isUpdatingCompany}
+                          className="flex min-w-20 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                         >
+                          {isUpdatingCompany && <Spinner className="h-3.5 w-3.5" />}
                           Speichern
                         </button>
                         <button
@@ -473,11 +496,12 @@ function AdminKundenPage() {
                         <button
                           type="button"
                           onClick={() => void removeCompany(company.id)}
+                          disabled={isDeletingCompany}
                           aria-label="Löschen"
                           title="Löschen"
-                          className="rounded-lg bg-red-50 p-2 text-red-700 hover:bg-red-100"
+                          className="rounded-lg bg-red-50 p-2 text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                          {isDeletingCompany ? <Spinner className="h-4 w-4" /> : <Trash2 className="h-4 w-4" strokeWidth={2.25} />}
                         </button>
                       </>
                     )}

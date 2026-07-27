@@ -6,6 +6,7 @@ import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
 
@@ -18,7 +19,7 @@ const settingsNavItems = [
 ]
 
 function AdminPage() {
-  const { isAdminLoggedIn, adminLogin, adminLogout } = useAppState()
+  const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout } = useAppState()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
@@ -81,8 +82,10 @@ function AdminPage() {
 
               <button
                 type="submit"
-                className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black"
+                disabled={isAdminLoggingIn}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {isAdminLoggingIn && <Spinner className="h-4 w-4" />}
                 Als Admin anmelden
               </button>
 

@@ -4,6 +4,7 @@ import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
+import { Spinner } from './spinner'
 
 type ProductVisual = {
   gradient: string
@@ -63,11 +64,12 @@ export function WizardFlow({
   onExit?: () => void
   vorgaengeTo?: string
 }) {
-  const { products, selectedCompany: loggedInCompany, constructionSites, createRecord } = useAppState()
+  const { products, selectedCompany: loggedInCompany, constructionSites, createRecord, isCreatingRecord } = useAppState()
   const selectedCompany = company ?? loggedInCompany
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
+  const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(
     () => products.find((p) => p.flow === flowType)?.id ?? 0,
   )
@@ -129,15 +131,20 @@ export function WizardFlow({
     setConstructionSiteName('')
   }
 
-  function redownloadDeliveryNote() {
+  async function redownloadDeliveryNote() {
     if (!successRecord || !selectedCompany) return
 
-    void downloadCombinedDeliveryNote(
-      [successRecord.record],
-      selectedCompany.name,
-      successRecord.record.deliveryNoteId,
-      selectedCompany,
-    )
+    setIsDownloadingNote(true)
+    try {
+      await downloadCombinedDeliveryNote(
+        [successRecord.record],
+        selectedCompany.name,
+        successRecord.record.deliveryNoteId,
+        selectedCompany,
+      )
+    } finally {
+      setIsDownloadingNote(false)
+    }
   }
 
   if (step === 1) {
@@ -315,9 +322,10 @@ export function WizardFlow({
           <button
             type="button"
             onClick={submitRecord}
-            disabled={!validAmount || !validConstructionSiteName}
-            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+            disabled={!validAmount || !validConstructionSiteName || isCreatingRecord}
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isCreatingRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
           </button>
         </div>
@@ -386,9 +394,11 @@ export function WizardFlow({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={redownloadDeliveryNote}
-            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+            onClick={() => void redownloadDeliveryNote()}
+            disabled={isDownloadingNote}
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
           </button>
           {onExit ? (

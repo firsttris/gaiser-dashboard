@@ -4,11 +4,12 @@ import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
+import { Spinner } from '../components/spinner'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
-  const { companies, login, isLoggedIn } = useAppState()
+  const { companies, login, isLoggingIn, isLoggedIn } = useAppState()
   const [query, setQuery] = useState('')
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const [pin, setPin] = useState('')
@@ -42,7 +43,13 @@ function App() {
     void navigate({ to: '/kunde/neuer-vorgang' })
   }
 
-  if (isLoggedIn) return null
+  if (isLoggedIn) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner className="h-8 w-8 text-slate-400" />
+      </div>
+    )
+  }
 
   return (
     <PageShell>
@@ -116,8 +123,10 @@ function App() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black"
+              disabled={isLoggingIn}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
             >
+              {isLoggingIn && <Spinner className="h-4 w-4" />}
               Anmelden
             </button>
 
