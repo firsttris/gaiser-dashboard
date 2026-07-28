@@ -5,8 +5,8 @@ import bcrypt from 'bcryptjs'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { getCustomerSession, setCustomerSession, clearCustomerSession } from './session'
 import { priceCategorySchema, PIN_HASH_ROUNDS } from './companies'
-import { checkAndConsumeMasterPin } from './signup-settings'
-import { generateCustomerNumber } from './numbering'
+import { checkAndConsumeMasterPin } from './master-pin.server'
+import { generateCustomerNumber } from './customer-number.server'
 
 const MAX_ATTEMPTS = 5
 const LOCKOUT_MINUTES = 15

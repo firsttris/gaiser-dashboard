@@ -4,7 +4,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { supabaseBrowser } from '#/lib/supabase/browser-client'
 import { requireAdminSession } from './middleware/require-admin-session'
-import { generateCustomerNumber } from './numbering'
+import { generateCustomerNumber } from './customer-number.server'
 
 export const PIN_HASH_ROUNDS = 12
 
