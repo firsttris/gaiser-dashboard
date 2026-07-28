@@ -11,6 +11,8 @@ import {
   adminSetCompanyPin,
 } from '../server/companies'
 import { adminSetMasterPin, verifySignupMasterPin } from '../server/signup-settings'
+import { adminDownloadBackup } from '../server/backup'
+import { downloadSqlFile } from '../utils/history-utils'
 import {
   productsQueryOptions,
   adminCreateProduct,
@@ -313,6 +315,8 @@ type AppState = {
   updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
   isUpdatingNumberingSettings: boolean
   generateInvoiceNumber: () => Promise<string>
+  downloadDatabaseBackup: () => Promise<CreateCompanyResult>
+  isDownloadingBackup: boolean
 }
 
 const AppStateContext = createContext<AppState | null>(null)
@@ -521,6 +525,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     onSuccess: () => invalidate(['numbering-settings']),
   })
 
+  const downloadBackupMutation = useMutation({
+    mutationFn: adminDownloadBackup,
+    onSuccess: (result) => {
+      if (result.ok) downloadSqlFile(result.filename, result.content)
+    },
+  })
+
   const value = useMemo<AppState>(
     () => ({
       hydrated,
@@ -594,6 +605,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateNumberingSettings: async (input) => updateNumberingSettingsMutation.mutateAsync({ data: input }),
       isUpdatingNumberingSettings: updateNumberingSettingsMutation.isPending,
       generateInvoiceNumber: async () => generateInvoiceNumberMutation.mutateAsync({}),
+      downloadDatabaseBackup: async () => {
+        try {
+          const result = await downloadBackupMutation.mutateAsync({})
+          return result.ok ? { ok: true } : { ok: false, message: 'Backup konnte nicht erstellt werden.' }
+        } catch {
+          return { ok: false, message: 'Backup konnte nicht erstellt werden.' }
+        }
+      },
+      isDownloadingBackup: downloadBackupMutation.isPending,
     }),
     [
       hydrated,
@@ -634,6 +654,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       assignCancelMutation,
       updateNumberingSettingsMutation,
       generateInvoiceNumberMutation,
+      downloadBackupMutation,
     ],
   )
 

@@ -21,8 +21,15 @@ const TOKEN_HINTS = [
 ]
 
 function AdminEinstellungenPage() {
-  const { numberingSettings, updateNumberingSettings, isUpdatingNumberingSettings, setMasterPin, isSettingMasterPin } =
-    useAppState()
+  const {
+    numberingSettings,
+    updateNumberingSettings,
+    isUpdatingNumberingSettings,
+    setMasterPin,
+    isSettingMasterPin,
+    downloadDatabaseBackup,
+    isDownloadingBackup,
+  } = useAppState()
 
   const [invoiceTemplate, setInvoiceTemplate] = useState(numberingSettings.invoiceTemplate)
   const [deliveryNoteTemplate, setDeliveryNoteTemplate] = useState(numberingSettings.deliveryNoteTemplate)
@@ -33,6 +40,8 @@ function AdminEinstellungenPage() {
 
   const [newMasterPin, setNewMasterPin] = useState('')
   const [masterPinMessage, setMasterPinMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+
+  const [backupMessage, setBackupMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   // numberingSettings loads asynchronously (Supabase query) after this
   // component's initial useState already ran with the placeholder default —
@@ -79,6 +88,16 @@ function AdminEinstellungenPage() {
 
     setNewMasterPin('')
     setMasterPinMessage({ kind: 'success', text: 'Master-PIN wurde geändert.' })
+  }
+
+  async function downloadBackup() {
+    setBackupMessage(null)
+    const result = await downloadDatabaseBackup()
+    if (!result.ok) {
+      setBackupMessage({ kind: 'error', text: result.message })
+      return
+    }
+    setBackupMessage({ kind: 'success', text: 'Backup wurde heruntergeladen.' })
   }
 
   return (
@@ -211,6 +230,34 @@ function AdminEinstellungenPage() {
             }`}
           >
             {masterPinMessage.text}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <h3 className="font-title text-2xl text-slate-900">Datenbank-Backup</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Lädt einen SQL-Dump aller Daten (Kunden, Vorgänge, Produkte, LKWs, Einstellungen) als Datei herunter. Das
+          Datenbankschema selbst ist im Projekt unter <code className="text-xs">supabase/migrations/</code> versioniert.
+        </p>
+
+        <button
+          type="button"
+          onClick={downloadBackup}
+          disabled={isDownloadingBackup}
+          className="mt-4 flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isDownloadingBackup && <Spinner className="h-4 w-4" />}
+          SQL-Backup herunterladen
+        </button>
+
+        {backupMessage && (
+          <p
+            className={`mt-4 rounded-xl p-3 text-sm ${
+              backupMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            {backupMessage.text}
           </p>
         )}
       </div>

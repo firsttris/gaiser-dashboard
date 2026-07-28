@@ -126,7 +126,15 @@ export function companyFilenameSegment(companyName?: string) {
 }
 
 export function downloadCsvFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  downloadTextFile(filename, content, 'text/csv;charset=utf-8;')
+}
+
+export function downloadSqlFile(filename: string, content: string) {
+  downloadTextFile(filename, content, 'application/sql;charset=utf-8;')
+}
+
+function downloadTextFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
