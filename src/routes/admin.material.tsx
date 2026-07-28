@@ -192,7 +192,7 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
                 )}
               </td>
               <td className="px-3 py-2">
-                <div className="flex w-56 justify-end gap-2">
+                <div className="flex justify-end gap-2">
                   {editingProductId === product.id ? (
                     <>
                       <button

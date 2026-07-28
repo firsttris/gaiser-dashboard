@@ -215,7 +215,7 @@ function AdminSitesPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <div className="flex w-56 justify-end gap-2">
+                  <div className="flex justify-end gap-2">
                     {editingSiteId === site.id ? (
                       <>
                         <button
