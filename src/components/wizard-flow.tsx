@@ -6,6 +6,12 @@ import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 import { Spinner } from './spinner'
 
+// Uploaded material photos are already absolute Supabase Storage URLs;
+// resolvePublicAssetUrl is only meant for the bundled /assets/* fallbacks.
+function resolveVisualImageUrl(imagePath: string) {
+  return /^https?:\/\//.test(imagePath) ? imagePath : resolvePublicAssetUrl(imagePath)
+}
+
 type ProductVisual = {
   gradient: string
   emoji: string
@@ -39,8 +45,9 @@ const fallbackVisuals: ProductVisual[] = [
   { gradient: 'from-neutral-400 to-neutral-600', emoji: '📦' },
 ]
 
-function getVisual(productId: number): ProductVisual {
-  return productVisuals[productId] ?? fallbackVisuals[productId % fallbackVisuals.length]
+function getVisual(product: { id: number; imageUrl: string | null }): ProductVisual {
+  const staticVisual = productVisuals[product.id] ?? fallbackVisuals[product.id % fallbackVisuals.length]
+  return product.imageUrl ? { ...staticVisual, imagePath: product.imageUrl } : staticVisual
 }
 
 function money(value: number) {
@@ -161,7 +168,7 @@ export function WizardFlow({
             <label className="text-sm font-semibold text-slate-700">Material</label>
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {availableProducts.map((p) => {
-                const visual = getVisual(p.id)
+                const visual = getVisual(p)
                 const isSelected = p.id === selectedProductId
                 return (
                   <button
@@ -176,7 +183,7 @@ export function WizardFlow({
                   >
                     {visual.imagePath ? (
                       <img
-                        src={resolvePublicAssetUrl(visual.imagePath)}
+                        src={resolveVisualImageUrl(visual.imagePath)}
                         alt={p.name}
                         className="w-full aspect-video object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -255,7 +262,7 @@ export function WizardFlow({
   }
 
   if (step === 2) {
-    const step2Visual = selectedProduct ? getVisual(selectedProduct.id) : null
+    const step2Visual = selectedProduct ? getVisual(selectedProduct) : null
     return (
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
@@ -268,7 +275,7 @@ export function WizardFlow({
             <div className="relative overflow-hidden rounded-xl">
               {step2Visual.imagePath ? (
                 <img
-                  src={resolvePublicAssetUrl(step2Visual.imagePath)}
+                  src={resolveVisualImageUrl(step2Visual.imagePath)}
                   alt={selectedProduct?.name}
                   className="w-full aspect-video object-cover"
                 />
@@ -334,7 +341,8 @@ export function WizardFlow({
   }
 
   if (step === 3 && successRecord) {
-    const step3Visual = getVisual(successRecord.productId)
+    const successProduct = products.find((p) => p.id === successRecord.productId)
+    const step3Visual = getVisual({ id: successRecord.productId, imageUrl: successProduct?.imageUrl ?? null })
     return (
       <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex items-center gap-3">
@@ -360,7 +368,7 @@ export function WizardFlow({
           <div className="relative overflow-hidden rounded-xl">
             {step3Visual.imagePath ? (
               <img
-                src={resolvePublicAssetUrl(step3Visual.imagePath)}
+                src={resolveVisualImageUrl(step3Visual.imagePath)}
                 alt={successRecord.productName}
                 className="w-full aspect-video object-cover"
               />

@@ -19,6 +19,33 @@ const createProductSchema = z.object({
 const updateProductSchema = createProductSchema.extend({ id: z.number() })
 const deleteProductSchema = z.object({ id: z.number() })
 
+const PRODUCT_IMAGE_BUCKET = 'product-images'
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024
+const PRODUCT_IMAGE_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+
+const uploadProductImageSchema = z.object({
+  id: z.number(),
+  fileBase64: z.string(),
+  contentType: z.string(),
+})
+const removeProductImageSchema = z.object({ id: z.number() })
+
+function productImageUrl(imagePath: string | null) {
+  if (!imagePath) return null
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  return `${supabaseUrl}/storage/v1/object/public/${PRODUCT_IMAGE_BUCKET}/${imagePath}`
+}
+
+function decodeBase64Image(fileBase64: string) {
+  const commaIndex = fileBase64.indexOf(',')
+  const base64Data = commaIndex >= 0 ? fileBase64.slice(commaIndex + 1) : fileBase64
+  return Buffer.from(base64Data, 'base64')
+}
+
 function toProduct(row: ProductRow) {
   return {
     id: row.id,
@@ -29,6 +56,7 @@ function toProduct(row: ProductRow) {
     pickupBusinessPrice: row.pickup_business_price,
     dropoffPrivatePrice: row.dropoff_private_price,
     dropoffBusinessPrice: row.dropoff_business_price,
+    imageUrl: productImageUrl(row.image_path),
   }
 }
 
@@ -139,7 +167,11 @@ export const adminDeleteProduct = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => deleteProductSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: currentProduct } = await context.supabase.from('products').select('name, flow').eq('id', data.id).maybeSingle()
+    const { data: currentProduct } = await context.supabase
+      .from('products')
+      .select('name, flow, image_path')
+      .eq('id', data.id)
+      .maybeSingle()
     if (!currentProduct) {
       return { ok: false, message: 'Das Produkt wurde nicht gefunden.' } as const
     }
@@ -168,6 +200,80 @@ export const adminDeleteProduct = createServerFn({ method: 'POST' })
     const { error } = await context.supabase.from('products').delete().eq('id', data.id)
     if (error) {
       return { ok: false, message: 'Das Produkt konnte nicht geloescht werden.' } as const
+    }
+
+    if (currentProduct.image_path) {
+      await context.supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([currentProduct.image_path])
+    }
+
+    return { ok: true } as const
+  })
+
+export const adminUploadProductImage = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => uploadProductImageSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const extension = PRODUCT_IMAGE_EXTENSION_BY_MIME_TYPE[data.contentType]
+    if (!extension) {
+      return { ok: false, message: 'Nur JPG-, PNG- oder WebP-Bilder sind erlaubt.' } as const
+    }
+
+    const { data: currentProduct } = await context.supabase
+      .from('products')
+      .select('image_path')
+      .eq('id', data.id)
+      .maybeSingle()
+    if (!currentProduct) {
+      return { ok: false, message: 'Das Produkt wurde nicht gefunden.' } as const
+    }
+
+    const buffer = decodeBase64Image(data.fileBase64)
+    if (buffer.byteLength > MAX_PRODUCT_IMAGE_BYTES) {
+      return { ok: false, message: 'Das Bild darf maximal 5 MB groß sein.' } as const
+    }
+
+    const path = `${data.id}-${Date.now()}.${extension}`
+
+    const { error: uploadError } = await context.supabase.storage
+      .from(PRODUCT_IMAGE_BUCKET)
+      .upload(path, buffer, { contentType: data.contentType, upsert: true })
+    if (uploadError) {
+      return { ok: false, message: 'Das Bild konnte nicht hochgeladen werden.' } as const
+    }
+
+    const { error: updateError } = await context.supabase.from('products').update({ image_path: path }).eq('id', data.id)
+    if (updateError) {
+      await context.supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([path])
+      return { ok: false, message: 'Das Bild konnte nicht gespeichert werden.' } as const
+    }
+
+    if (currentProduct.image_path && currentProduct.image_path !== path) {
+      await context.supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([currentProduct.image_path])
+    }
+
+    return { ok: true, imageUrl: productImageUrl(path) } as const
+  })
+
+export const adminRemoveProductImage = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => removeProductImageSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: currentProduct } = await context.supabase
+      .from('products')
+      .select('image_path')
+      .eq('id', data.id)
+      .maybeSingle()
+    if (!currentProduct) {
+      return { ok: false, message: 'Das Produkt wurde nicht gefunden.' } as const
+    }
+
+    const { error } = await context.supabase.from('products').update({ image_path: null }).eq('id', data.id)
+    if (error) {
+      return { ok: false, message: 'Das Bild konnte nicht entfernt werden.' } as const
+    }
+
+    if (currentProduct.image_path) {
+      await context.supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([currentProduct.image_path])
     }
 
     return { ok: true } as const

@@ -35,6 +35,7 @@ export type ProductRow = {
   pickup_business_price: number
   dropoff_private_price: number
   dropoff_business_price: number
+  image_path: string | null
   created_at: string
 }
 
@@ -111,7 +112,7 @@ export type Database = {
       }
       products: {
         Row: ProductRow
-        Insert: Omit<ProductRow, 'id' | 'created_at'> & Partial<Pick<ProductRow, 'id'>>
+        Insert: Omit<ProductRow, 'id' | 'created_at' | 'image_path'> & Partial<Pick<ProductRow, 'id' | 'image_path'>>
         Update: Partial<Omit<ProductRow, 'id' | 'created_at'>>
         Relationships: []
       }

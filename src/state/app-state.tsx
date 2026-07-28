@@ -11,7 +11,14 @@ import {
   adminSetCompanyPin,
 } from '../server/companies'
 import { adminSetMasterPin, verifySignupMasterPin } from '../server/signup-settings'
-import { productsQueryOptions, adminCreateProduct, adminUpdateProduct, adminDeleteProduct } from '../server/products'
+import {
+  productsQueryOptions,
+  adminCreateProduct,
+  adminUpdateProduct,
+  adminDeleteProduct,
+  adminUploadProductImage,
+  adminRemoveProductImage,
+} from '../server/products'
 import { trucksQueryOptions, adminCreateTruck, adminUpdateTruck, adminDeleteTruck } from '../server/trucks'
 import {
   constructionSitesQueryOptions,
@@ -62,6 +69,7 @@ export type Product = {
   pickupBusinessPrice: number
   dropoffPrivatePrice: number
   dropoffBusinessPrice: number
+  imageUrl: string | null
 }
 
 export type Truck = {
@@ -176,6 +184,18 @@ type DeleteProductInput = {
   id: number
 }
 
+type UploadProductImageInput = {
+  id: number
+  fileBase64: string
+  contentType: string
+}
+
+type UploadProductImageResult = { ok: true; imageUrl: string | null } | { ok: false; message: string }
+
+type RemoveProductImageInput = {
+  id: number
+}
+
 type CreateTruckInput = {
   name: string
   privatePrice: string
@@ -271,6 +291,10 @@ type AppState = {
   isUpdatingProduct: boolean
   deleteProduct: (input: DeleteProductInput) => Promise<CreateCompanyResult>
   isDeletingProduct: boolean
+  uploadProductImage: (input: UploadProductImageInput) => Promise<UploadProductImageResult>
+  isUploadingProductImage: boolean
+  removeProductImage: (input: RemoveProductImageInput) => Promise<CreateCompanyResult>
+  isRemovingProductImage: boolean
   createTruck: (input: CreateTruckInput) => Promise<CreateCompanyResult>
   isCreatingTruck: boolean
   updateTruck: (input: UpdateTruckInput) => Promise<CreateCompanyResult>
@@ -400,6 +424,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   })
   const deleteProductMutation = useMutation({
     mutationFn: adminDeleteProduct,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['products'])
+    },
+  })
+  const uploadProductImageMutation = useMutation({
+    mutationFn: adminUploadProductImage,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['products'])
+    },
+  })
+  const removeProductImageMutation = useMutation({
+    mutationFn: adminRemoveProductImage,
     onSuccess: (result) => {
       if (result.ok) invalidate(['products'])
     },
@@ -535,6 +571,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingProduct: updateProductMutation.isPending,
       deleteProduct: async (input) => deleteProductMutation.mutateAsync({ data: input }),
       isDeletingProduct: deleteProductMutation.isPending,
+      uploadProductImage: async (input) => uploadProductImageMutation.mutateAsync({ data: input }),
+      isUploadingProductImage: uploadProductImageMutation.isPending,
+      removeProductImage: async (input) => removeProductImageMutation.mutateAsync({ data: input }),
+      isRemovingProductImage: removeProductImageMutation.isPending,
       createTruck: async (input) => createTruckMutation.mutateAsync({ data: input }),
       isCreatingTruck: createTruckMutation.isPending,
       updateTruck: async (input) => updateTruckMutation.mutateAsync({ data: input }),
@@ -581,6 +621,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       createProductMutation,
       updateProductMutation,
       deleteProductMutation,
+      uploadProductImageMutation,
+      removeProductImageMutation,
       createTruckMutation,
       updateTruckMutation,
       deleteTruckMutation,

@@ -1,12 +1,80 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Camera, Image as ImageIcon, X } from 'lucide-react'
 import { useAppState } from '../state/app-state'
 import { useProductForm } from '../hooks/use-product-form'
 import { ProductNameInput, ProductUnitInput, ProductFlowSelect, PriceField } from '../components/product-form-inputs'
 import { Spinner } from '../components/spinner'
+import { fileToBase64 } from '../utils/file-to-base64'
 import type { Product } from '../state/app-state'
+
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024
+const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
+function ProductImageCell({
+  product,
+  isBusy,
+  onUpload,
+  onRemove,
+}: {
+  product: Product
+  isBusy: boolean
+  onUpload: (file: File) => void
+  onRemove: () => void
+}) {
+  const inputId = `product-image-${product.id}`
+
+  return (
+    <div className="relative h-14 w-14 shrink-0">
+      {product.imageUrl ? (
+        <img src={product.imageUrl} alt="" className="h-14 w-14 rounded-lg object-cover" />
+      ) : (
+        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+          <ImageIcon className="h-5 w-5" strokeWidth={1.75} />
+        </div>
+      )}
+
+      {isBusy && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/70">
+          <Spinner className="h-4 w-4" />
+        </div>
+      )}
+
+      <label
+        htmlFor={inputId}
+        title="Bild ändern"
+        className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white hover:bg-black"
+      >
+        <Camera className="h-3 w-3" strokeWidth={2.5} />
+      </label>
+      <input
+        id={inputId}
+        type="file"
+        accept={ALLOWED_PRODUCT_IMAGE_TYPES.join(',')}
+        className="hidden"
+        disabled={isBusy}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file) onUpload(file)
+        }}
+      />
+
+      {product.imageUrl && (
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={isBusy}
+          title="Bild entfernen"
+          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <X className="h-3 w-3" strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
+  )
+}
 
 export const Route = createFileRoute('/admin/material')({
   beforeLoad: async ({ context }) => {
@@ -35,23 +103,51 @@ type ProductListProps = {
   onRemove: (productId: number) => void
   isSaving: boolean
   isRemoving: boolean
+  imageActionProductId: number | null
+  onImageUpload: (productId: number, file: File) => void
+  onImageRemove: (productId: number) => void
 }
 
-function ProductCards({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: ProductListProps) {
+function ProductCards({
+  type,
+  items,
+  editingProductId,
+  editFormState,
+  onEditFormUpdate,
+  onSave,
+  onCancel,
+  onStartEdit,
+  onRemove,
+  isSaving,
+  isRemoving,
+  imageActionProductId,
+  onImageUpload,
+  onImageRemove,
+}: ProductListProps) {
   return (
     <div className="mt-3 space-y-3 md:hidden">
       {items.map((product) => (
         <article key={product.id} className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-500">Material</p>
-          {editingProductId === product.id ? (
-            <input
-              value={editFormState.name}
-              onChange={(event) => onEditFormUpdate({ name: event.target.value })}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+          <div className="flex items-start gap-3">
+            <ProductImageCell
+              product={product}
+              isBusy={imageActionProductId === product.id}
+              onUpload={(file) => onImageUpload(product.id, file)}
+              onRemove={() => onImageRemove(product.id)}
             />
-          ) : (
-            <p className="text-sm font-semibold text-slate-900">{product.name}</p>
-          )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-slate-500">Material</p>
+              {editingProductId === product.id ? (
+                <input
+                  value={editFormState.name}
+                  onChange={(event) => onEditFormUpdate({ name: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+              ) : (
+                <p className="text-sm font-semibold text-slate-900">{product.name}</p>
+              )}
+            </div>
+          </div>
 
           <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -135,13 +231,29 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
   )
 }
 
-function ProductTable({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove, isSaving, isRemoving }: ProductListProps) {
+function ProductTable({
+  type,
+  items,
+  editingProductId,
+  editFormState,
+  onEditFormUpdate,
+  onSave,
+  onCancel,
+  onStartEdit,
+  onRemove,
+  isSaving,
+  isRemoving,
+  imageActionProductId,
+  onImageUpload,
+  onImageRemove,
+}: ProductListProps) {
   return (
     <div className="mt-3 hidden overflow-x-auto md:block">
       <table className="w-full min-w-3xl table-fixed border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-slate-500">
-            <th className="w-[38%] px-3 py-2">Material</th>
+            <th className="w-20 px-3 py-2">Bild</th>
+            <th className="w-[34%] px-3 py-2">Material</th>
             <th className="w-24 px-3 py-2">Einheit</th>
             <th className="w-40 px-3 py-2">Privat (€)</th>
             <th className="w-44 px-3 py-2">Unternehmen (€)</th>
@@ -151,6 +263,14 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
         <tbody>
           {items.map((product) => (
             <tr key={product.id} className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
+              <td className="px-3 py-2">
+                <ProductImageCell
+                  product={product}
+                  isBusy={imageActionProductId === product.id}
+                  onUpload={(file) => onImageUpload(product.id, file)}
+                  onRemove={() => onImageRemove(product.id)}
+                />
+              </td>
               <td className="px-3 py-2">
                 {editingProductId === product.id ? (
                   <input
@@ -246,11 +366,22 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
 }
 
 function AdminProductsPage() {
-  const { products, createProduct, isCreatingProduct, updateProduct, isUpdatingProduct, deleteProduct, isDeletingProduct } =
-    useAppState()
+  const {
+    products,
+    createProduct,
+    isCreatingProduct,
+    updateProduct,
+    isUpdatingProduct,
+    deleteProduct,
+    isDeletingProduct,
+    uploadProductImage,
+    removeProductImage,
+  } = useAppState()
   const createForm = useProductForm()
   const editForm = useProductForm()
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
+  const [imageActionProductId, setImageActionProductId] = useState<number | null>(null)
+  const [imageError, setImageError] = useState('')
 
   const dropoffProducts = products.filter((product) => product.flow === 'dropoff')
   const pickupProducts = products.filter((product) => product.flow === 'pickup')
@@ -335,6 +466,39 @@ function AdminProductsPage() {
     editForm.setMessage(`Produkt ${product.name} wurde gelöscht.`, 'success')
   }
 
+  async function handleImageUpload(productId: number, file: File) {
+    setImageError('')
+
+    if (!ALLOWED_PRODUCT_IMAGE_TYPES.includes(file.type)) {
+      setImageError('Bitte ein JPG-, PNG- oder WebP-Bild auswählen.')
+      return
+    }
+    if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+      setImageError('Das Bild darf maximal 5 MB groß sein.')
+      return
+    }
+
+    setImageActionProductId(productId)
+    try {
+      const fileBase64 = await fileToBase64(file)
+      const result = await uploadProductImage({ id: productId, fileBase64, contentType: file.type })
+      if (!result.ok) setImageError(result.message)
+    } finally {
+      setImageActionProductId(null)
+    }
+  }
+
+  async function handleImageRemove(productId: number) {
+    setImageError('')
+    setImageActionProductId(productId)
+    try {
+      const result = await removeProductImage({ id: productId })
+      if (!result.ok) setImageError(result.message)
+    } finally {
+      setImageActionProductId(null)
+    }
+  }
+
   const listProps = {
     editingProductId,
     editFormState: {
@@ -350,14 +514,20 @@ function AdminProductsPage() {
     onRemove: removeProduct,
     isSaving: isUpdatingProduct,
     isRemoving: isDeletingProduct,
+    imageActionProductId,
+    onImageUpload: handleImageUpload,
+    onImageRemove: handleImageRemove,
   }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Material</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Materialien können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
+        Materialien können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden. Über das Kamera-Symbol
+        am Bild kann pro Material ein Foto hinterlegt werden.
       </p>
+
+      {imageError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{imageError}</p>}
 
       <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-slate-50 p-5">
         <h3 className="text-sm font-semibold text-slate-700">Neues Material anlegen</h3>
