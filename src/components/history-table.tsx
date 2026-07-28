@@ -18,8 +18,11 @@ interface Props {
 
 export function shortDocId(id: string) {
   const parts = id.split('-')
-  if (parts.length >= 3) return `${parts[0]}-${parts[1].slice(4)}-${parts[2].slice(-4)}`
-  return id
+  if (parts.length < 3) return id
+  const seq = parts[parts.length - 1]
+  const date = parts[parts.length - 2]
+  const prefix = parts.slice(0, parts.length - 2).join('-')
+  return `${prefix}-${date.slice(-4)}-${seq.slice(-4)}`
 }
 
 const DOC_COLOR_CLASSES = {
