@@ -4,10 +4,11 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { supabaseBrowser } from '#/lib/supabase/browser-client'
 import { requireAdminSession } from './middleware/require-admin-session'
+import { generateCustomerNumber } from './numbering'
 
-const PIN_HASH_ROUNDS = 12
+export const PIN_HASH_ROUNDS = 12
 
-const priceCategorySchema = z.enum(['private', 'business'])
+export const priceCategorySchema = z.enum(['private', 'business'])
 
 const createCompanySchema = z.object({
   name: z.string().min(1),
@@ -75,10 +76,11 @@ export const adminCreateCompany = createServerFn({ method: 'POST' })
     const name = data.name.trim()
 
     const pinHash = await bcrypt.hash(data.pin, PIN_HASH_ROUNDS)
+    const customerNumber = data.customerNumber.trim() || (await generateCustomerNumber())
 
     const { error } = await context.supabase.from('companies').insert({
       name,
-      customer_number: data.customerNumber.trim(),
+      customer_number: customerNumber,
       street: data.street.trim(),
       postal_code: data.postalCode.trim(),
       city: data.city.trim(),

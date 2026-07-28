@@ -135,13 +135,20 @@ function App() {
               Anmelden
             </button>
 
-            <div className="border-t border-slate-200 pt-3 text-center">
-              <Link
-                to="/admin"
-                className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900"
-              >
-                Zum Admin-Bereich
-              </Link>
+            <div className="border-t border-slate-200 pt-3 text-center space-y-1">
+              <p>
+                <Link to="/registrieren" className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900">
+                  Neu hier? Jetzt registrieren
+                </Link>
+              </p>
+              <p>
+                <Link
+                  to="/admin"
+                  className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900"
+                >
+                  Zum Admin-Bereich
+                </Link>
+              </p>
             </div>
           </form>
         </div>

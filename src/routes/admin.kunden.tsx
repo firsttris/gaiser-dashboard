@@ -140,69 +140,59 @@ function AdminKundenPage() {
         Kunden können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
-      <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-6">
-        <div className="md:col-span-2">
+      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <h3 className="text-sm font-semibold text-slate-700">Neuen Kunden anlegen</h3>
+
+        <form onSubmit={submitCompany} className="mt-4 space-y-4">
           <CompanyInput
             label="Kundenname"
             value={createForm.formState.name}
             onChange={(val) => createForm.update({ name: val })}
             placeholder="z.B. Krampfert Wohnbau GmbH"
           />
-        </div>
 
-        <div>
-          <CompanyInput
-            label="Kundennummer"
-            value={createForm.formState.customerNumber}
-            onChange={(val) => createForm.update({ customerNumber: val })}
-            placeholder="z.B. K-001"
-          />
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <CompanyInput
+              label="Kundennummer"
+              value={createForm.formState.customerNumber}
+              onChange={(val) => createForm.update({ customerNumber: val })}
+              placeholder="leer = automatisch"
+            />
+            <PriceCategorySelect
+              label="Tarifgruppe"
+              value={createForm.formState.priceCategory}
+              onChange={(val) => createForm.update({ priceCategory: val })}
+            />
+          </div>
 
-        <div>
           <PinInput
             label="PIN (4-stellig)"
             value={createForm.formState.pin}
             onChange={(val) => createForm.update({ pin: val })}
           />
-        </div>
 
-        <div>
-          <PriceCategorySelect
-            label="Tarifgruppe"
-            value={createForm.formState.priceCategory}
-            onChange={(val) => createForm.update({ priceCategory: val })}
-          />
-        </div>
-
-        <div className="md:col-span-3">
           <CompanyInput
             label="Straße"
             value={createForm.formState.street}
             onChange={(val) => createForm.update({ street: val })}
             placeholder="z.B. Bastian-Gugel-Straße 11"
           />
-        </div>
 
-        <div>
-          <CompanyInput
-            label="PLZ"
-            value={createForm.formState.postalCode}
-            onChange={(val) => createForm.update({ postalCode: val.replace(/[^0-9]/g, '').slice(0, 5) })}
-            placeholder="z.B. 77815"
-          />
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <CompanyInput
+              label="PLZ"
+              value={createForm.formState.postalCode}
+              onChange={(val) => createForm.update({ postalCode: val.replace(/[^0-9]/g, '').slice(0, 5) })}
+              placeholder="z.B. 77815"
+            />
+            <CompanyInput
+              label="Ort"
+              value={createForm.formState.city}
+              onChange={(val) => createForm.update({ city: val })}
+              placeholder="z.B. Bühl"
+            />
+          </div>
 
-        <div className="md:col-span-2">
-          <CompanyInput
-            label="Ort"
-            value={createForm.formState.city}
-            onChange={(val) => createForm.update({ city: val })}
-            placeholder="z.B. Bühl"
-          />
-        </div>
-
-        <div className="md:col-span-6">
           <button
             type="submit"
             disabled={isCreatingCompany}
@@ -211,13 +201,15 @@ function AdminKundenPage() {
             {isCreatingCompany && <Spinner className="h-4 w-4" />}
             Kunde anlegen
           </button>
-        </div>
-      </form>
+        </form>
 
-      {createForm.error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>}
-      {createForm.success && (
-        <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>
-      )}
+        {createForm.error && (
+          <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>
+        )}
+        {createForm.success && (
+          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>
+        )}
+      </div>
 
       <div className="mt-5 space-y-3 md:hidden">
         {companies.map((company) => (

@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminSessionStatusQueryOptions, adminSignIn, adminSignOut } from '../server/admin-auth'
-import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut } from '../server/customer-auth'
+import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut, customerSignUp } from '../server/customer-auth'
 import {
   adminCompaniesQueryOptions,
   publicCompaniesQueryOptions,
@@ -10,6 +10,7 @@ import {
   adminDeleteCompany,
   adminSetCompanyPin,
 } from '../server/companies'
+import { adminSetMasterPin, verifySignupMasterPin } from '../server/signup-settings'
 import { productsQueryOptions, adminCreateProduct, adminUpdateProduct, adminDeleteProduct } from '../server/products'
 import { trucksQueryOptions, adminCreateTruck, adminUpdateTruck, adminDeleteTruck } from '../server/trucks'
 import {
@@ -210,6 +211,25 @@ type SetCompanyPinInput = {
   pin: string
 }
 
+type SignUpInput = {
+  masterPin: string
+  name: string
+  street: string
+  postalCode: string
+  city: string
+  priceCategory: PriceCategory
+  pin: string
+  pinConfirmation: string
+}
+
+type SetMasterPinInput = {
+  pin: string
+}
+
+type VerifyMasterPinInput = {
+  masterPin: string
+}
+
 type AppState = {
   hydrated: boolean
   companies: Company[]
@@ -224,6 +244,12 @@ type AppState = {
   login: (companyId: string, pin: string) => Promise<LoginResult>
   isLoggingIn: boolean
   logout: () => void
+  signUp: (input: SignUpInput) => Promise<LoginResult>
+  isSigningUp: boolean
+  verifyMasterPin: (input: VerifyMasterPinInput) => Promise<LoginResult>
+  isVerifyingMasterPin: boolean
+  setMasterPin: (input: SetMasterPinInput) => Promise<CreateCompanyResult>
+  isSettingMasterPin: boolean
   adminLogin: (email: string, password: string) => Promise<LoginResult>
   isAdminLoggingIn: boolean
   adminLogout: () => void
@@ -329,6 +355,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     mutationFn: customerSignOut,
     onSuccess: () => invalidate(['auth', 'customer']),
   })
+  const customerSignUpMutation = useMutation({
+    mutationFn: customerSignUp,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['auth', 'customer'])
+    },
+  })
+  const setMasterPinMutation = useMutation({ mutationFn: adminSetMasterPin })
+  const verifyMasterPinMutation = useMutation({ mutationFn: verifySignupMasterPin })
   const createCompanyMutation = useMutation({
     mutationFn: adminCreateCompany,
     onSuccess: (result) => {
@@ -466,6 +500,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
       isLoggingIn: customerSignInMutation.isPending,
       logout: () => customerSignOutMutation.mutate({}),
+      signUp: async (input) => customerSignUpMutation.mutateAsync({ data: input }),
+      isSigningUp: customerSignUpMutation.isPending,
+      verifyMasterPin: async (input) => verifyMasterPinMutation.mutateAsync({ data: input }),
+      isVerifyingMasterPin: verifyMasterPinMutation.isPending,
+      setMasterPin: async (input) => setMasterPinMutation.mutateAsync({ data: input }),
+      isSettingMasterPin: setMasterPinMutation.isPending,
       adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
       isAdminLoggingIn: adminSignInMutation.isPending,
       adminLogout: () => adminSignOutMutation.mutate({}),
@@ -527,6 +567,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       numberingSettings,
       customerSignInMutation,
       customerSignOutMutation,
+      customerSignUpMutation,
+      verifyMasterPinMutation,
+      setMasterPinMutation,
       adminSignInMutation,
       adminSignOutMutation,
       createRecordMutation,

@@ -79,9 +79,19 @@ export type NumberingSettingsRow = {
   next_invoice_number: number
   next_delivery_note_number: number
   number_padding: number
+  next_customer_number: number
+}
+
+export type SignupSettingsRow = {
+  id: true
+  master_pin_hash: string
+  failed_pin_attempts: number
+  pin_locked_until: string | null
+  updated_at: string
 }
 
 type NumberIncrementResult = { template: string; counter: number; padding: number }[]
+type CustomerNumberIncrementResult = { counter: number }[]
 
 export type Database = {
   public: {
@@ -138,6 +148,12 @@ export type Database = {
         Update: Partial<Omit<NumberingSettingsRow, 'id'>>
         Relationships: []
       }
+      signup_settings: {
+        Row: SignupSettingsRow
+        Insert: SignupSettingsRow
+        Update: Partial<Omit<SignupSettingsRow, 'id'>>
+        Relationships: []
+      }
     }
     Views: {
       companies_public: {
@@ -153,6 +169,10 @@ export type Database = {
       next_invoice_number: {
         Args: Record<string, never>
         Returns: NumberIncrementResult
+      }
+      next_customer_number: {
+        Args: Record<string, never>
+        Returns: CustomerNumberIncrementResult
       }
     }
   }

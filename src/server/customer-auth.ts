@@ -4,6 +4,9 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { getCustomerSession, setCustomerSession, clearCustomerSession } from './session'
+import { priceCategorySchema, PIN_HASH_ROUNDS } from './companies'
+import { checkAndConsumeMasterPin } from './signup-settings'
+import { generateCustomerNumber } from './numbering'
 
 const MAX_ATTEMPTS = 5
 const LOCKOUT_MINUTES = 15
@@ -13,6 +16,22 @@ const signInSchema = z.object({
   companyId: z.string().uuid(),
   pin: z.string().regex(/^\d{4}$/),
 })
+
+const signUpSchema = z
+  .object({
+    masterPin: z.string().regex(/^\d{4}$/),
+    name: z.string().min(1),
+    street: z.string(),
+    postalCode: z.string(),
+    city: z.string(),
+    priceCategory: priceCategorySchema,
+    pin: z.string().regex(/^\d{4}$/),
+    pinConfirmation: z.string().regex(/^\d{4}$/),
+  })
+  .refine((data) => data.pin === data.pinConfirmation, {
+    message: 'Die PINs stimmen nicht überein.',
+    path: ['pinConfirmation'],
+  })
 
 function toPublicCompany(company: {
   id: string
@@ -73,6 +92,41 @@ export const customerSignIn = createServerFn({ method: 'POST' })
     }
 
     await supabase.from('companies').update({ failed_pin_attempts: 0, pin_locked_until: null }).eq('id', company.id)
+    await setCustomerSession({ companyId: company.id, loggedInAt: Date.now() })
+
+    return { ok: true, company: toPublicCompany(company) } as const
+  })
+
+export const customerSignUp = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => signUpSchema.parse(data))
+  .handler(async ({ data }) => {
+    const masterPinCheck = await checkAndConsumeMasterPin(data.masterPin)
+    if (!masterPinCheck.ok) {
+      return masterPinCheck
+    }
+
+    const supabase = getServiceSupabaseClient()
+    const pinHash = await bcrypt.hash(data.pin, PIN_HASH_ROUNDS)
+    const customerNumber = await generateCustomerNumber()
+
+    const { data: company, error } = await supabase
+      .from('companies')
+      .insert({
+        name: data.name.trim(),
+        customer_number: customerNumber,
+        street: data.street.trim(),
+        postal_code: data.postalCode.trim(),
+        city: data.city.trim(),
+        price_category: data.priceCategory,
+        pin_hash: pinHash,
+      })
+      .select('id, name, customer_number, street, postal_code, city, price_category')
+      .single()
+
+    if (error || !company) {
+      return { ok: false, message: 'Der Account konnte nicht angelegt werden.' } as const
+    }
+
     await setCustomerSession({ companyId: company.id, loggedInAt: Date.now() })
 
     return { ok: true, company: toPublicCompany(company) } as const

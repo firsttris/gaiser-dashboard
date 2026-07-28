@@ -3,6 +3,7 @@ import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useEffect, useState } from 'react'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
+import { PinInput } from '../components/company-form-inputs'
 
 export const Route = createFileRoute('/admin/einstellungen')({
   beforeLoad: async ({ context }) => {
@@ -20,7 +21,8 @@ const TOKEN_HINTS = [
 ]
 
 function AdminEinstellungenPage() {
-  const { numberingSettings, updateNumberingSettings, isUpdatingNumberingSettings } = useAppState()
+  const { numberingSettings, updateNumberingSettings, isUpdatingNumberingSettings, setMasterPin, isSettingMasterPin } =
+    useAppState()
 
   const [invoiceTemplate, setInvoiceTemplate] = useState(numberingSettings.invoiceTemplate)
   const [deliveryNoteTemplate, setDeliveryNoteTemplate] = useState(numberingSettings.deliveryNoteTemplate)
@@ -28,6 +30,9 @@ function AdminEinstellungenPage() {
   const [nextDeliveryNoteNumber, setNextDeliveryNoteNumber] = useState(String(numberingSettings.nextDeliveryNoteNumber))
   const [numberPadding, setNumberPadding] = useState(String(numberingSettings.numberPadding))
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+
+  const [newMasterPin, setNewMasterPin] = useState('')
+  const [masterPinMessage, setMasterPinMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   // numberingSettings loads asynchronously (Supabase query) after this
   // component's initial useState already ran with the placeholder default —
@@ -61,6 +66,19 @@ function AdminEinstellungenPage() {
     }
 
     setMessage({ kind: 'success', text: 'Einstellungen wurden gespeichert.' })
+  }
+
+  async function submitMasterPin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const result = await setMasterPin({ pin: newMasterPin })
+    if (!result.ok) {
+      setMasterPinMessage({ kind: 'error', text: result.message })
+      return
+    }
+
+    setNewMasterPin('')
+    setMasterPinMessage({ kind: 'success', text: 'Master-PIN wurde geändert.' })
   }
 
   return (
@@ -163,6 +181,39 @@ function AdminEinstellungenPage() {
           {message.text}
         </p>
       )}
+
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <h3 className="font-title text-2xl text-slate-900">Master-PIN für Kunden-Registrierung</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Neue Kunden benötigen diese PIN, um sich unter /registrieren selbst ein Konto anzulegen. Die aktuelle PIN
+          wird aus Sicherheitsgründen nicht angezeigt.
+        </p>
+
+        <form onSubmit={submitMasterPin} className="mt-4 flex flex-wrap items-end gap-4">
+          <div className="w-40">
+            <PinInput label="Neue Master-PIN" value={newMasterPin} onChange={setNewMasterPin} />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSettingMasterPin || !/^\d{4}$/.test(newMasterPin)}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSettingMasterPin && <Spinner className="h-4 w-4" />}
+            Master-PIN ändern
+          </button>
+        </form>
+
+        {masterPinMessage && (
+          <p
+            className={`mt-4 rounded-xl p-3 text-sm ${
+              masterPinMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            {masterPinMessage.text}
+          </p>
+        )}
+      </div>
     </section>
   )
 }
