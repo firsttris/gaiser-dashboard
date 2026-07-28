@@ -17,6 +17,7 @@
 
 html {
   scrollbar-gutter: stable;
+  touch-action: manipulation;
 }
 
 body {
