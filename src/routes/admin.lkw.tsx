@@ -314,27 +314,28 @@ function AdminTrucksPage() {
         LKW-Stundenpreise können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
-      <form onSubmit={submitTruck} className="mt-4 grid gap-4 md:grid-cols-6">
-        <div className="md:col-span-3">
+      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <h3 className="text-sm font-semibold text-slate-700">Neuen LKW anlegen</h3>
+
+        <form onSubmit={submitTruck} className="mt-4 space-y-4">
           <ProductNameInput
             label="LKW"
             value={createForm.formState.name}
             onChange={(val) => createForm.update({ name: val })}
             placeholder="z.B. LKW 3-Achser inkl. Maut"
           />
-        </div>
 
-        <div>
-          <label className="text-sm font-semibold text-slate-700">Privat (€/Std.)</label>
-          <PriceField value={createForm.formState.privatePrice} onChange={(val) => createForm.update({ privatePrice: val })} placeholder="0" className="mt-2" />
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Privat (€/Std.)</label>
+              <PriceField value={createForm.formState.privatePrice} onChange={(val) => createForm.update({ privatePrice: val })} placeholder="0" className="mt-2" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Unternehmen (€/Std.)</label>
+              <PriceField value={createForm.formState.businessPrice} onChange={(val) => createForm.update({ businessPrice: val })} placeholder="0" className="mt-2" />
+            </div>
+          </div>
 
-        <div>
-          <label className="text-sm font-semibold text-slate-700">Unternehmen (€/Std.)</label>
-          <PriceField value={createForm.formState.businessPrice} onChange={(val) => createForm.update({ businessPrice: val })} placeholder="0" className="mt-2" />
-        </div>
-
-        <div className="md:col-span-6">
           <button
             type="submit"
             disabled={isCreatingTruck}
@@ -343,11 +344,15 @@ function AdminTrucksPage() {
             {isCreatingTruck && <Spinner className="h-4 w-4" />}
             LKW anlegen
           </button>
-        </div>
-      </form>
+        </form>
 
-      {createForm.error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>}
-      {createForm.success && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>}
+        {createForm.error && (
+          <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>
+        )}
+        {createForm.success && (
+          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>
+        )}
+      </div>
 
       <div className="mt-6">
         <TruckCards items={trucks} {...listProps} />
