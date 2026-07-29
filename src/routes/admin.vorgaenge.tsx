@@ -170,40 +170,6 @@ function AdminVorgaengePage() {
           </div>
         </div>
 
-        <SelectionActionBar
-          count={selectedCount}
-          noun="Eintrag"
-          pluralLabel="Einträge"
-          total={selectedTotal}
-          warning={
-            selectedAllOpenLieferschein && selectedCompanies.length > 1
-              ? 'Rechnung ist nur möglich, wenn alle markierten Einträge zur gleichen Firma gehören.'
-              : undefined
-          }
-          onClear={clearSelection}
-          actions={[
-            {
-              label: 'CSV Export',
-              onClick: exportSelectedAsCsv,
-            },
-            {
-              label: 'Stornieren',
-              disabled: !canStorno,
-              onClick: () => setPendingAction({
-                action: stornoSelection,
-                title: 'Lieferscheine stornieren',
-                message: `Sind Sie sicher, dass Sie ${selectedRecords.length} ${selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} stornieren möchten?`,
-              }),
-            },
-            {
-              label: 'Rechnung erstellen',
-              variant: 'primary',
-              disabled: !canCreateInvoice,
-              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
-            },
-          ]}
-        />
-
         <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">
           <label className="text-sm font-semibold text-slate-700">
             Firma
@@ -258,6 +224,40 @@ function AdminVorgaengePage() {
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
+
+        <SelectionActionBar
+          count={selectedCount}
+          noun="Eintrag"
+          pluralLabel="Einträge"
+          total={selectedTotal}
+          warning={
+            selectedAllOpenLieferschein && selectedCompanies.length > 1
+              ? 'Rechnung ist nur möglich, wenn alle markierten Einträge zur gleichen Firma gehören.'
+              : undefined
+          }
+          onClear={clearSelection}
+          actions={[
+            {
+              label: 'CSV Export',
+              onClick: exportSelectedAsCsv,
+            },
+            {
+              label: 'Stornieren',
+              disabled: !canStorno,
+              onClick: () => setPendingAction({
+                action: stornoSelection,
+                title: 'Lieferscheine stornieren',
+                message: `Sind Sie sicher, dass Sie ${selectedRecords.length} ${selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} stornieren möchten?`,
+              }),
+            },
+            {
+              label: 'Rechnung erstellen',
+              variant: 'primary',
+              disabled: !canCreateInvoice,
+              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
+            },
+          ]}
+        />
 
         {recordsQuery.isLoading ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
