@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
+import { Ban, CheckCircle2, FileSpreadsheet, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
@@ -106,6 +107,14 @@ function AdminRechnungenPage() {
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), true)
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsvFile(`admin-rechnungen-${stamp}.csv`, csv)
+  }
+
+  async function downloadSelectedInvoices() {
+    for (const group of selectedGroups) {
+      const customer = companies.find((c) => c.name === group.items[0].company)
+      const deliveryNoteIds = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
+      await handleInvoiceDownload(group.id, group.items, customer, deliveryNoteIds.join(', '))
+    }
   }
 
   async function handleInvoiceDownload(id: string, items: RecordItem[], customer: ReturnType<typeof companies.find>, deliveryNoteRefs: string) {
@@ -219,10 +228,17 @@ function AdminRechnungenPage() {
           actions={[
             {
               label: 'CSV Export',
+              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
+              label: 'Rechnung',
+              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              onClick: () => void downloadSelectedInvoices(),
+            },
+            {
               label: 'Stornieren',
+              icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: () => setPendingAction({
                 action: stornoSelection,
                 title: 'Rechnungen stornieren',
@@ -231,6 +247,7 @@ function AdminRechnungenPage() {
             },
             {
               label: 'Als bezahlt markieren',
+              icon: <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !selectedAllOpen,
               onClick: () => setPendingAction({

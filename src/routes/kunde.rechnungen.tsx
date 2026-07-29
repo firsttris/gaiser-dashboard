@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { FileSpreadsheet, Receipt } from 'lucide-react'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
@@ -72,6 +73,13 @@ function RechnungenPage() {
       await downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
     } finally {
       setDownloadingDocId(null)
+    }
+  }
+
+  async function downloadSelectedInvoices() {
+    for (const group of selectedGroups) {
+      const deliveryNoteRefs = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+      await handleInvoiceDownload(group.id, group.items, deliveryNoteRefs)
     }
   }
 
@@ -158,7 +166,13 @@ function RechnungenPage() {
           actions={[
             {
               label: 'CSV Export',
+              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
+            },
+            {
+              label: 'Rechnung',
+              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              onClick: () => void downloadSelectedInvoices(),
             },
           ]}
         />

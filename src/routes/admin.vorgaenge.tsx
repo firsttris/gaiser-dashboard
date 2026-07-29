@@ -3,6 +3,7 @@ import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Ban, FilePlus, FileDown, FileSpreadsheet, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable } from '../components/history-table'
 import { Pagination } from '../components/pagination'
@@ -96,6 +97,21 @@ function AdminVorgaengePage() {
     const csv = createHistoryCsv(selectedRecords, true)
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
+  }
+
+  const selectedDeliveryNoteIds = [...new Set(selectedRecords.map((r) => r.deliveryNoteId).filter((id): id is string => Boolean(id)))]
+  const selectedInvoiceIds = [...new Set(selectedRecords.map((r) => r.invoiceId).filter((id): id is string => Boolean(id)))]
+
+  async function downloadSelectedDeliveryNotes() {
+    for (const id of selectedDeliveryNoteIds) {
+      await handleDeliveryNoteClick(id)
+    }
+  }
+
+  async function downloadSelectedInvoices() {
+    for (const id of selectedInvoiceIds) {
+      await handleInvoiceClick(id)
+    }
   }
 
   function stornoSelection() {
@@ -239,10 +255,24 @@ function AdminVorgaengePage() {
           actions={[
             {
               label: 'CSV Export',
+              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
+              label: 'Lieferschein',
+              icon: <FileDown className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectedDeliveryNoteIds.length === 0,
+              onClick: () => void downloadSelectedDeliveryNotes(),
+            },
+            {
+              label: 'Rechnung',
+              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectedInvoiceIds.length === 0,
+              onClick: () => void downloadSelectedInvoices(),
+            },
+            {
               label: 'Stornieren',
+              icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
               disabled: !canStorno,
               onClick: () => setPendingAction({
                 action: stornoSelection,
@@ -252,6 +282,7 @@ function AdminVorgaengePage() {
             },
             {
               label: 'Rechnung erstellen',
+              icon: <FilePlus className="h-3.5 w-3.5" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !canCreateInvoice,
               onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },

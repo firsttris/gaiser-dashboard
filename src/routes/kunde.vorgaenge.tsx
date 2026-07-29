@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { FileDown, FileSpreadsheet, Receipt } from 'lucide-react'
 import { HistoryTable } from '../components/history-table'
 import { PageShell } from '../components/page-shell'
 import { Pagination } from '../components/pagination'
@@ -105,6 +106,21 @@ function HistoryPage() {
     downloadCsvFile(`history-${company}-${stamp}.csv`, csv)
   }
 
+  const selectedDeliveryNoteIds = [...new Set(selectedRecords.map((r) => r.deliveryNoteId).filter((id): id is string => Boolean(id)))]
+  const selectedInvoiceIds = [...new Set(selectedRecords.map((r) => r.invoiceId).filter((id): id is string => Boolean(id)))]
+
+  async function downloadSelectedDeliveryNotes() {
+    for (const id of selectedDeliveryNoteIds) {
+      await handleDeliveryNoteClick(id)
+    }
+  }
+
+  async function downloadSelectedInvoices() {
+    for (const id of selectedInvoiceIds) {
+      await handleInvoiceClick(id)
+    }
+  }
+
   if (!isLoggedIn) {
     return (
       <PageShell>
@@ -188,7 +204,20 @@ function HistoryPage() {
           actions={[
             {
               label: 'CSV Export',
+              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
+            },
+            {
+              label: 'Lieferschein',
+              icon: <FileDown className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectedDeliveryNoteIds.length === 0,
+              onClick: () => void downloadSelectedDeliveryNotes(),
+            },
+            {
+              label: 'Rechnung',
+              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectedInvoiceIds.length === 0,
+              onClick: () => void downloadSelectedInvoices(),
             },
           ]}
         />
