@@ -23,12 +23,14 @@ const VARIANT_CLASSES = {
 } as const
 
 export function SelectionActionBar({ count, noun, pluralLabel, total, warning, onClear, actions }: Props) {
-  if (count === 0) return null
-
+  const isVisible = count > 0
   const label = count === 1 ? noun : pluralLabel
 
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 p-3">
+    <div
+      aria-hidden={!isVisible}
+      className={`mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 p-3 transition-opacity ${isVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+    >
       <div className="text-sm text-emerald-800">
         <span className="font-semibold">{count} {label}</span> ausgewählt
         {' · '}
@@ -38,6 +40,7 @@ export function SelectionActionBar({ count, noun, pluralLabel, total, warning, o
       <div className="flex gap-2">
         <button
           type="button"
+          disabled={!isVisible}
           onClick={onClear}
           className="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
         >
@@ -47,7 +50,7 @@ export function SelectionActionBar({ count, noun, pluralLabel, total, warning, o
           <button
             key={action.label}
             type="button"
-            disabled={action.disabled}
+            disabled={!isVisible || action.disabled}
             onClick={action.onClick}
             className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${VARIANT_CLASSES[action.variant ?? 'default']}`}
           >
