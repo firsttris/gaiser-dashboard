@@ -1,38 +1,62 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { DateRangeFilter } from '../components/date-range-filter'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
 import { PageShell } from '../components/page-shell'
+import { Pagination } from '../components/pagination'
 import { SelectionActionBar } from '../components/selection-action-bar'
-import { TopNav } from '../components/top-nav'
-import { useDocumentGroupFilters } from '../hooks/use-document-group-filters'
+import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
+import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, invoiceStatusFilterOf, reverseChargeExtraBadges } from '../utils/history-utils'
+import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
+import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
+
+const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/kunde/rechnungen')({ component: RechnungenPage })
 
 function RechnungenPage() {
-  const { isLoggedIn, records, selectedCompany } = useAppState()
-
-  const companyRecords = useMemo(
-    () => records.filter((r) => r.company === selectedCompany?.name),
-    [records, selectedCompany],
-  )
-
-  const {
-    statusFilter, setStatusFilter,
-    searchText, setSearchText,
-    dateRange, setDateRange,
-    allGroups, filteredGroups,
-  } = useDocumentGroupFilters(companyRecords, 'invoiceId', invoiceStatusFilterOf)
-
-  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(allGroups)
-
-  const areAllVisibleSelected = filteredGroups.length > 0 && filteredGroups.every((g) => selectedIds.has(g.id))
+  const { isLoggedIn, selectedCompany } = useAppState()
+  const [statusFilter, setStatusFilter] = useState<'all' | 'offen' | 'bezahlt' | 'storniert'>('all')
+  const [searchText, setSearchText] = useState('')
+  const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
+
+  const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
+  const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, debouncedSearch, dateFrom, dateTo, pageSize])
+
+  const filters = {
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    search: debouncedSearch || undefined,
+    dateFrom,
+    dateTo,
+  }
+
+  const groupsQuery = useQuery({
+    queryKey: ['invoice-groups', filters, page, pageSize] as const,
+    queryFn: () => listInvoiceGroupsPage({ data: { ...filters, page, pageSize } }),
+    placeholderData: keepPreviousData,
+    enabled: isLoggedIn,
+  })
+  const totalCountQuery = useQuery({ queryKey: ['invoice-groups', 'count'] as const, queryFn: () => countAllInvoiceGroups(), enabled: isLoggedIn })
+
+  const pageGroups = groupsQuery.data?.groups ?? []
+  const filteredCount = groupsQuery.data?.totalCount ?? 0
+  const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize))
+
+  const { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection } = useGroupSelection(pageGroups)
+
+  const areAllVisibleSelected = pageGroups.length > 0 && pageGroups.every((g) => selectedIds.has(g.id))
 
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
@@ -94,7 +118,7 @@ function RechnungenPage() {
             <p className="mt-1 text-sm text-slate-600">Alle Rechnungen für {selectedCompany?.name}.</p>
           </div>
           <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
-            {filteredGroups.length} von {allGroups.length} Rechnung{allGroups.length !== 1 ? 'en' : ''}
+            {filteredCount} von {totalCountQuery.data ?? filteredCount} Rechnung{(totalCountQuery.data ?? filteredCount) !== 1 ? 'en' : ''}
           </p>
         </div>
 
@@ -139,21 +163,26 @@ function RechnungenPage() {
           ]}
         />
 
-        {filteredGroups.length === 0 ? (
+        {groupsQuery.isLoading ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+        ) : pageGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Rechnungen für die aktuellen Filter vorhanden.
           </p>
         ) : (
-          <DocumentListTable
-            groups={filteredGroups}
-            getBadge={invoiceBadge}
-            getExtraBadges={reverseChargeExtraBadges}
-            renderDateien={renderDateien}
-            selectedIds={selectedIds}
-            onSelectionChange={toggleSelection}
-            areAllSelected={areAllVisibleSelected}
-            onSelectAll={(checked) => (checked ? selectAllVisible(filteredGroups) : deselectVisible(filteredGroups))}
-          />
+          <>
+            <DocumentListTable
+              groups={pageGroups}
+              getBadge={invoiceBadge}
+              getExtraBadges={reverseChargeExtraBadges}
+              renderDateien={renderDateien}
+              selectedIds={selectedIds}
+              onSelectionChange={toggleSelection}
+              areAllSelected={areAllVisibleSelected}
+              onSelectAll={(checked) => (checked ? selectAllVisible(pageGroups) : deselectVisible(pageGroups))}
+            />
+            <Pagination page={page} pageCount={pageCount} onPageChange={setPage} totalCount={filteredCount} pageSize={pageSize} onPageSizeChange={setPageSize} />
+          </>
         )}
       </section>
     </PageShell>

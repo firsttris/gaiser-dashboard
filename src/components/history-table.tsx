@@ -7,7 +7,7 @@ interface Props {
   selectedSet: Set<number>
   areAllVisibleSelected: boolean
   onSelectAll: (checked: boolean) => void
-  onToggle: (id: number) => void
+  onToggle: (record: RecordItem) => void
   showCompanyColumn?: boolean
   onStatusChange?: (id: number, status: RecordStatus) => void
   onDeliveryNoteClick?: (deliveryNoteId: string) => void
@@ -122,7 +122,7 @@ export function HistoryTable({
                   <input
                     type="checkbox"
                     checked={selectedSet.has(record.id)}
-                    onChange={() => onToggle(record.id)}
+                    onChange={() => onToggle(record)}
                     className="h-4 w-4 rounded border-slate-300"
                     aria-label={`Eintrag ${record.id} markieren`}
                   />
@@ -208,7 +208,7 @@ export function HistoryTable({
                     <input
                       type="checkbox"
                       checked={selectedSet.has(record.id)}
-                      onChange={() => onToggle(record.id)}
+                      onChange={() => onToggle(record)}
                       className="h-4 w-4 rounded border-slate-300"
                       aria-label={`Eintrag ${record.id} markieren`}
                     />

@@ -14,7 +14,7 @@ interface Props {
   renderDateien: (id: string, items: RecordItem[]) => ReactNode
   renderActions?: (id: string, items: RecordItem[]) => ReactNode
   selectedIds?: Set<string>
-  onSelectionChange?: (id: string, checked: boolean) => void
+  onSelectionChange?: (group: DocumentGroup, checked: boolean) => void
   isSelectable?: (items: RecordItem[]) => boolean
   areAllSelected?: boolean
   onSelectAll?: (checked: boolean) => void
@@ -51,7 +51,7 @@ export function DocumentListTable({
                       type="checkbox"
                       checked={selectedIds!.has(id)}
                       disabled={!rowSelectable}
-                      onChange={(e) => onSelectionChange!(id, e.target.checked)}
+                      onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
                       className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 disabled:opacity-40"
                     />
                   )}
@@ -140,7 +140,7 @@ export function DocumentListTable({
                         type="checkbox"
                         checked={selectedIds!.has(id)}
                         disabled={!rowSelectable}
-                        onChange={(e) => onSelectionChange!(id, e.target.checked)}
+                        onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
                         className="h-4 w-4 rounded border-slate-300 disabled:opacity-40"
                       />
                     </td>

@@ -57,50 +57,47 @@ export function DateRangeFilter({ value, onChange }: Props) {
   )
 }
 
-function parseGermanDate(createdAt: string): Date {
-  const [datePart, timePart] = createdAt.split(', ')
-  const [day, month, year] = datePart.split('.')
-  const [h = '0', m = '0', s = '0'] = (timePart ?? '').split(':')
-  return new Date(Number(year), Number(month) - 1, Number(day), Number(h), Number(m), Number(s))
+function toISODate(date: Date): string {
+  return date.toISOString().slice(0, 10)
 }
 
-export function matchesDateRange(createdAt: string, state: DateRangeState): boolean {
-  if (state.preset === 'all') return true
-
-  const date = parseGermanDate(createdAt)
+// Resolves a preset into concrete ISO date boundaries for the server-side
+// created_at filter. Mirrors the semantics of the old client-side
+// matchesDateRange: this-month/last-month/this-year are whole-month/year
+// windows, last-3-months is an open-ended lower bound, custom passes the
+// raw <input type=date> values through.
+export function resolveDateRange(state: DateRangeState): { from?: string; to?: string } {
   const now = new Date()
 
   if (state.preset === 'this-month') {
-    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+    return {
+      from: toISODate(new Date(now.getFullYear(), now.getMonth(), 1)),
+      to: toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+    }
   }
 
   if (state.preset === 'last-month') {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    return date.getMonth() === lastMonth.getMonth() && date.getFullYear() === lastMonth.getFullYear()
+    return {
+      from: toISODate(lastMonth),
+      to: toISODate(new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0)),
+    }
   }
 
   if (state.preset === 'last-3-months') {
-    const cutoff = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-    return date >= cutoff
+    return { from: toISODate(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())) }
   }
 
   if (state.preset === 'this-year') {
-    return date.getFullYear() === now.getFullYear()
+    return {
+      from: toISODate(new Date(now.getFullYear(), 0, 1)),
+      to: toISODate(new Date(now.getFullYear(), 11, 31)),
+    }
   }
 
   if (state.preset === 'custom') {
-    if (state.from) {
-      const fromDate = new Date(state.from)
-      fromDate.setHours(0, 0, 0, 0)
-      if (date < fromDate) return false
-    }
-    if (state.to) {
-      const toDate = new Date(state.to)
-      toDate.setHours(23, 59, 59, 999)
-      if (date > toDate) return false
-    }
-    return true
+    return { from: state.from || undefined, to: state.to || undefined }
   }
 
-  return true
+  return {}
 }

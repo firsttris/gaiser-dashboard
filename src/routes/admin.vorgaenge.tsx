@@ -1,16 +1,22 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ConfirmDialog } from '../components/confirm-dialog'
-import { HistoryTable, shortDocId } from '../components/history-table'
+import { HistoryTable } from '../components/history-table'
+import { Pagination } from '../components/pagination'
 import { SelectionActionBar } from '../components/selection-action-bar'
+import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
-import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { createHistoryCsv, downloadCsvFile, money, statusLabel } from '../utils/history-utils'
+import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
+import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
+
+const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/admin/vorgaenge')({
   beforeLoad: async ({ context }) => {
@@ -21,12 +27,14 @@ export const Route = createFileRoute('/admin/vorgaenge')({
 })
 
 function AdminVorgaengePage() {
-  const { companies, records, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
+  const { companies, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
@@ -37,24 +45,34 @@ function AdminVorgaengePage() {
     () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
     [companies],
   )
+  const companyId = companyFilter === 'all' ? undefined : companies.find((c) => c.name === companyFilter)?.id
 
-  const statusOptions = useMemo(
-    () => Array.from(new Set(records.map((r) => r.status))).sort((a, b) => a.localeCompare(b, 'de')),
-    [records],
-  )
+  const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
+  const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
 
-  const filteredRecords = useMemo(() => {
-    const query = searchText.trim().toLocaleLowerCase('de-DE')
-    return records.filter((record) => {
-      if (companyFilter !== 'all' && record.company !== companyFilter) return false
-      if (typeFilter !== 'all' && record.type !== typeFilter) return false
-      if (statusFilter !== 'all' && record.status !== statusFilter) return false
-      if (!matchesDateRange(record.createdAt, dateRange)) return false
-      if (!query) return true
-      const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
-      return haystack.includes(query)
-    })
-  }, [companyFilter, records, searchText, statusFilter, typeFilter, dateRange])
+  useEffect(() => {
+    setPage(1)
+  }, [companyId, typeFilter, statusFilter, debouncedSearch, dateFrom, dateTo, pageSize])
+
+  const filters = {
+    companyId,
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    search: debouncedSearch || undefined,
+    dateFrom,
+    dateTo,
+  }
+
+  const recordsQuery = useQuery({
+    queryKey: ['records', filters, page, pageSize] as const,
+    queryFn: () => listRecordsPage({ data: { ...filters, page, pageSize } }),
+    placeholderData: keepPreviousData,
+  })
+  const totalCountQuery = useQuery({ queryKey: ['records', 'count'] as const, queryFn: () => countAllRecords() })
+
+  const pageRecords = recordsQuery.data?.records ?? []
+  const filteredCount = recordsQuery.data?.totalCount ?? 0
+  const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize))
 
   const {
     selectedSet,
@@ -65,7 +83,7 @@ function AdminVorgaengePage() {
     selectAllVisible,
     deselectVisible,
     clearSelection,
-  } = useRecordSelection(filteredRecords)
+  } = useRecordSelection(pageRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
   const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
@@ -102,11 +120,11 @@ function AdminVorgaengePage() {
   }
 
   async function handleDeliveryNoteClick(deliveryNoteId: string) {
-    const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
-    if (!group.length) return
-    const customer = companies.find((c) => c.name === group[0].company)
     setDownloadingDocId(deliveryNoteId)
     try {
+      const group = await listRecordsByDocId({ data: { field: 'delivery_note_id', value: deliveryNoteId } })
+      if (!group.length) return
+      const customer = companies.find((c) => c.name === group[0].company)
       await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
     } finally {
       setDownloadingDocId(null)
@@ -114,19 +132,19 @@ function AdminVorgaengePage() {
   }
 
   async function handleInvoiceClick(invoiceId: string) {
-    const group = records.filter((r) => r.invoiceId === invoiceId)
-    if (!group.length) return
-    const customer = companies.find((c) => c.name === group[0].company)
     setDownloadingDocId(invoiceId)
     try {
+      const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
+      if (!group.length) return
+      const customer = companies.find((c) => c.name === group[0].company)
       await downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
     } finally {
       setDownloadingDocId(null)
     }
   }
 
-  function handleCancelClick(cancelId: string) {
-    const group = records.filter((r) => r.cancelId === cancelId)
+  async function handleCancelClick(cancelId: string) {
+    const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (!group.length) return
     downloadStornoDoc(group, group[0].company, cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
   }
@@ -141,7 +159,7 @@ function AdminVorgaengePage() {
           </div>
           <div className="flex items-center gap-3">
             <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
-              {filteredRecords.length} von {records.length} Einträgen
+              {filteredCount} von {totalCountQuery.data ?? filteredCount} Einträgen
             </p>
             <Link
               to="/admin/neuer-vorgang"
@@ -223,8 +241,8 @@ function AdminVorgaengePage() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>{statusLabel(s)}</option>
+              {statusStages.map((stage) => (
+                <option key={stage.value} value={stage.value}>{stage.label}</option>
               ))}
             </select>
           </label>
@@ -241,23 +259,28 @@ function AdminVorgaengePage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
-        {filteredRecords.length === 0 ? (
+        {recordsQuery.isLoading ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+        ) : pageRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Einträge für die aktuellen Filter vorhanden.
           </p>
         ) : (
-          <HistoryTable
-            records={filteredRecords}
-            selectedSet={selectedSet}
-            areAllVisibleSelected={areAllVisibleSelected}
-            onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
-            onToggle={toggleRecordSelection}
-            showCompanyColumn
-            onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
-            onInvoiceClick={(id) => void handleInvoiceClick(id)}
-            onCancelClick={handleCancelClick}
-            downloadingDocId={downloadingDocId}
-          />
+          <>
+            <HistoryTable
+              records={pageRecords}
+              selectedSet={selectedSet}
+              areAllVisibleSelected={areAllVisibleSelected}
+              onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
+              onToggle={toggleRecordSelection}
+              showCompanyColumn
+              onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
+              onInvoiceClick={(id) => void handleInvoiceClick(id)}
+              onCancelClick={(id) => void handleCancelClick(id)}
+              downloadingDocId={downloadingDocId}
+            />
+            <Pagination page={page} pageCount={pageCount} onPageChange={setPage} totalCount={filteredCount} pageSize={pageSize} onPageSizeChange={setPageSize} />
+          </>
         )}
       </article>
 

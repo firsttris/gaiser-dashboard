@@ -3,45 +3,47 @@ import type { RecordItem } from '../state/app-state'
 
 type DocGroup = { id: string; items: RecordItem[] }
 
-export function useGroupSelection<G extends DocGroup>(allGroups: G[]) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+// Selection is a Map keyed by id rather than a filter over the page's
+// groups — with server-side pagination, groups selected on one page are no
+// longer present in the array once the user pages away, so selectedGroups
+// can't be re-derived by filtering `pageGroups` anymore.
+export function useGroupSelection<G extends DocGroup>(_pageGroups: G[]) {
+  const [selectedMap, setSelectedMap] = useState<Map<string, G>>(new Map())
 
-  const selectedGroups = useMemo(
-    () => allGroups.filter((g) => selectedIds.has(g.id)),
-    [allGroups, selectedIds],
-  )
+  const selectedIds = useMemo(() => new Set(selectedMap.keys()), [selectedMap])
+  const selectedGroups = useMemo(() => Array.from(selectedMap.values()), [selectedMap])
   const selectedTotal = useMemo(
     () => selectedGroups.reduce((sum, g) => sum + g.items.reduce((s, r) => s + r.total, 0), 0),
     [selectedGroups],
   )
 
-  function toggleSelection(id: string, checked: boolean) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (checked) next.add(id)
-      else next.delete(id)
+  function toggleSelection(group: G, checked: boolean) {
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      if (checked) next.set(group.id, group)
+      else next.delete(group.id)
       return next
     })
   }
 
-  function selectAllVisible(groups: DocGroup[]) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      groups.forEach((g) => next.add(g.id))
+  function selectAllVisible(groups: G[]) {
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      groups.forEach((g) => next.set(g.id, g))
       return next
     })
   }
 
   function deselectVisible(groups: DocGroup[]) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
       groups.forEach((g) => next.delete(g.id))
       return next
     })
   }
 
   function clearSelection() {
-    setSelectedIds(new Set())
+    setSelectedMap(new Map())
   }
 
   return { selectedIds, selectedGroups, selectedTotal, toggleSelection, selectAllVisible, deselectVisible, clearSelection }

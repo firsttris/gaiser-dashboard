@@ -1,44 +1,59 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { HistoryTable, shortDocId } from '../components/history-table'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { HistoryTable } from '../components/history-table'
 import { PageShell } from '../components/page-shell'
+import { Pagination } from '../components/pagination'
+import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
-import { useAppState } from '../state/app-state'
-import { DateRangeFilter, type DateRangeState, initialDateRange, matchesDateRange } from '../components/date-range-filter'
-import { companyFilenameSegment, createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
+import { type RecordStatus, useAppState } from '../state/app-state'
+import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
+import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, statusStages } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
+
+const DEFAULT_PAGE_SIZE = 25
 
 export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPage })
 
 function HistoryPage() {
-  const { isLoggedIn, records, selectedCompany } = useAppState()
+  const { isLoggedIn, selectedCompany } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
-  const companyRecords = records.filter((record) => record.company === selectedCompany?.name)
+  const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
+  const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
 
-  const statusOptions = useMemo(() => {
-    return Array.from(new Set(companyRecords.map((record) => record.status))).sort((a, b) => a.localeCompare(b, 'de'))
-  }, [companyRecords])
+  useEffect(() => {
+    setPage(1)
+  }, [typeFilter, statusFilter, debouncedSearch, dateFrom, dateTo, pageSize])
 
-  const filteredRecords = useMemo(() => {
-    const query = searchText.trim().toLocaleLowerCase('de-DE')
+  const filters = {
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    search: debouncedSearch || undefined,
+    dateFrom,
+    dateTo,
+  }
 
-    return companyRecords.filter((record) => {
-      if (typeFilter !== 'all' && record.type !== typeFilter) return false
-      if (statusFilter !== 'all' && record.status !== statusFilter) return false
+  const recordsQuery = useQuery({
+    queryKey: ['records', filters, page, pageSize] as const,
+    queryFn: () => listRecordsPage({ data: { ...filters, page, pageSize } }),
+    placeholderData: keepPreviousData,
+    enabled: isLoggedIn,
+  })
+  const totalCountQuery = useQuery({ queryKey: ['records', 'count'] as const, queryFn: () => countAllRecords(), enabled: isLoggedIn })
 
-      if (!matchesDateRange(record.createdAt, dateRange)) return false
-      if (!query) return true
-
-      const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
-      return haystack.includes(query)
-    })
-  }, [companyRecords, searchText, statusFilter, typeFilter, dateRange])
+  const pageRecords = recordsQuery.data?.records ?? []
+  const filteredCount = recordsQuery.data?.totalCount ?? 0
+  const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize))
 
   const {
     selectedSet,
@@ -49,16 +64,15 @@ function HistoryPage() {
     selectAllVisible,
     deselectVisible,
     clearSelection,
-  } = useRecordSelection(filteredRecords)
+  } = useRecordSelection(pageRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
-  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   async function handleDeliveryNoteClick(deliveryNoteId: string) {
-    const group = companyRecords.filter((r) => r.deliveryNoteId === deliveryNoteId)
-    if (group.length === 0) return
     setDownloadingDocId(deliveryNoteId)
     try {
+      const group = await listRecordsByDocId({ data: { field: 'delivery_note_id', value: deliveryNoteId } })
+      if (group.length === 0) return
       await downloadCombinedDeliveryNote(group, selectedCompany?.name ?? '', deliveryNoteId, selectedCompany ?? undefined)
     } finally {
       setDownloadingDocId(null)
@@ -66,18 +80,18 @@ function HistoryPage() {
   }
 
   async function handleInvoiceClick(invoiceId: string) {
-    const group = companyRecords.filter((r) => r.invoiceId === invoiceId)
-    if (group.length === 0) return
     setDownloadingDocId(invoiceId)
     try {
+      const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
+      if (group.length === 0) return
       await downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
     } finally {
       setDownloadingDocId(null)
     }
   }
 
-  function handleCancelClick(cancelId: string) {
-    const group = companyRecords.filter((r) => r.cancelId === cancelId)
+  async function handleCancelClick(cancelId: string) {
+    const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (group.length === 0) return
     downloadStornoDoc(group, selectedCompany?.name ?? '', cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
   }
@@ -120,7 +134,7 @@ function HistoryPage() {
             <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgänge für {selectedCompany?.name}.</p>
           </div>
           <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
-            {filteredRecords.length} von {companyRecords.length} Einträgen
+            {filteredCount} von {totalCountQuery.data ?? filteredCount} Einträgen
           </p>
         </div>
 
@@ -143,14 +157,12 @@ function HistoryPage() {
             Status
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => setStatusFilter(event.target.value as 'all' | RecordStatus)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
+              {statusStages.map((stage) => (
+                <option key={stage.value} value={stage.value}>{stage.label}</option>
               ))}
             </select>
           </label>
@@ -181,22 +193,27 @@ function HistoryPage() {
           ]}
         />
 
-        {filteredRecords.length === 0 ? (
+        {recordsQuery.isLoading ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+        ) : pageRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Einträge für die aktuellen Filter vorhanden.
           </p>
         ) : (
-          <HistoryTable
-            records={filteredRecords}
-            selectedSet={selectedSet}
-            areAllVisibleSelected={areAllVisibleSelected}
-            onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
-            onToggle={toggleRecordSelection}
-            onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
-            onInvoiceClick={(id) => void handleInvoiceClick(id)}
-            onCancelClick={handleCancelClick}
-            downloadingDocId={downloadingDocId}
-          />
+          <>
+            <HistoryTable
+              records={pageRecords}
+              selectedSet={selectedSet}
+              areAllVisibleSelected={areAllVisibleSelected}
+              onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
+              onToggle={toggleRecordSelection}
+              onDeliveryNoteClick={(id) => void handleDeliveryNoteClick(id)}
+              onInvoiceClick={(id) => void handleInvoiceClick(id)}
+              onCancelClick={(id) => void handleCancelClick(id)}
+              downloadingDocId={downloadingDocId}
+            />
+            <Pagination page={page} pageCount={pageCount} onPageChange={setPage} totalCount={filteredCount} pageSize={pageSize} onPageSizeChange={setPageSize} />
+          </>
         )}
       </section>
     </PageShell>

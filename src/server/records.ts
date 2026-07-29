@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
@@ -7,6 +6,7 @@ import { requireAnySession } from './auth-context'
 import { findOrCreateConstructionSite } from './construction-sites'
 import { formatGeneratedNumber } from '#/utils/numbering-format'
 import type { PriceCategory, RecordRow } from '#/lib/supabase/types'
+import type { RecordItem } from '../state/app-state'
 
 const createRecordSchema = z.object({
   type: z.enum(['pickup', 'dropoff']),
@@ -39,7 +39,7 @@ const assignCancelSchema = z.object({
   cancelId: z.string(),
 })
 
-function toRecord(row: RecordRow) {
+export function toRecord(row: RecordRow): RecordItem {
   return {
     id: row.id,
     company: row.company_name,
@@ -178,16 +178,86 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
     return toRecord(inserted)
   })
 
-export const listRecords = createServerFn({ method: 'GET' }).handler(async () => {
+const listRecordsPageSchema = z.object({
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive().max(200),
+  companyId: z.string().uuid().optional(),
+  type: z.enum(['pickup', 'dropoff', 'lkw']).optional(),
+  status: z.enum(['offen', 'lieferschein', 'rechnung', 'bezahlt', 'storniert']).optional(),
+  search: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+})
+
+// PostgREST's .or() takes a comma-separated filter list — strip characters
+// that would let free-text search input break out of that syntax.
+function sanitizeSearchTerm(search: string) {
+  return search.replace(/[,()]/g, ' ').trim()
+}
+
+export const listRecordsPage = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => listRecordsPageSchema.parse(data))
+  .handler(async ({ data }) => {
+    const caller = await requireAnySession()
+    const supabase = getServiceSupabaseClient()
+
+    let query = supabase.from('records').select('*', { count: 'exact' })
+    query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
+    if (caller.role === 'admin' && data.companyId) query = query.eq('company_id', data.companyId)
+    if (data.type) query = query.eq('type', data.type)
+    if (data.status) query = query.eq('status', data.status)
+
+    const search = data.search ? sanitizeSearchTerm(data.search) : ''
+    if (search) {
+      const term = `%${search}%`
+      query = query.or(
+        `construction_site_name.ilike.${term},delivery_note_id.ilike.${term},invoice_id.ilike.${term},cancel_id.ilike.${term}`,
+      )
+    }
+
+    if (data.dateFrom) query = query.gte('created_at', `${data.dateFrom}T00:00:00`)
+    if (data.dateTo) query = query.lte('created_at', `${data.dateTo}T23:59:59.999`)
+
+    const from = (data.page - 1) * data.pageSize
+    const { data: rows, error, count } = await query
+      .order('id', { ascending: false })
+      .range(from, from + data.pageSize - 1)
+
+    if (error || !rows) return { records: [], totalCount: 0 }
+    return { records: rows.map(toRecord), totalCount: count ?? 0 }
+  })
+
+const listRecordsByDocIdSchema = z.object({
+  field: z.enum(['delivery_note_id', 'invoice_id', 'cancel_id']),
+  value: z.string(),
+})
+
+// Delivery notes / invoices / cancellations can combine records that no
+// longer share a page once results are paginated — this fetches the full
+// set for one doc id, independent of the current page/filters.
+export const listRecordsByDocId = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => listRecordsByDocIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    const caller = await requireAnySession()
+    const supabase = getServiceSupabaseClient()
+
+    let query = supabase.from('records').select('*').eq(data.field, data.value).order('id', { ascending: false })
+    query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
+
+    const { data: rows, error } = await query
+    if (error || !rows) return []
+    return rows.map(toRecord)
+  })
+
+export const countAllRecords = createServerFn({ method: 'GET' }).handler(async () => {
   const caller = await requireAnySession()
   const supabase = getServiceSupabaseClient()
 
-  const query = supabase.from('records').select('*').order('id', { ascending: false })
-  const { data, error } =
-    caller.role === 'admin' ? await query : await query.eq('company_id', caller.companyId)
+  let query = supabase.from('records').select('*', { count: 'exact', head: true })
+  query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
 
-  if (error || !data) return []
-  return data.map(toRecord)
+  const { count } = await query
+  return count ?? 0
 })
 
 export const updateRecordStatus = createServerFn({ method: 'POST' })
@@ -212,10 +282,4 @@ export const assignCancel = createServerFn({ method: 'POST' })
   .validator((data: unknown) => assignCancelSchema.parse(data))
   .handler(async ({ data, context }) => {
     await context.supabase.from('records').update({ cancel_id: data.cancelId }).in('id', data.recordIds)
-  })
-
-export const recordsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['records'] as const,
-    queryFn: () => listRecords(),
   })

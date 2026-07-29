@@ -91,6 +91,19 @@ export type SignupSettingsRow = {
   updated_at: string
 }
 
+export type InvoiceGroupRow = {
+  invoice_id: string
+  company_id: string
+  company_name: string
+  created_at: string
+  total: number
+  item_count: number
+  invoice_reverse_charge: boolean
+  // Raw records.status, not a UI label — invoiced records are only ever
+  // 'rechnung' | 'bezahlt' | 'storniert' (never 'offen'/'lieferschein').
+  status: 'rechnung' | 'bezahlt' | 'storniert'
+}
+
 type NumberIncrementResult = { template: string; counter: number; padding: number }[]
 type CustomerNumberIncrementResult = { counter: number }[]
 
@@ -159,6 +172,10 @@ export type Database = {
     Views: {
       companies_public: {
         Row: CompanyPublicRow
+        Relationships: []
+      }
+      invoice_groups: {
+        Row: InvoiceGroupRow
         Relationships: []
       }
     }

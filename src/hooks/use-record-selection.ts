@@ -4,45 +4,48 @@ type SelectableRecord = {
   id: number
 }
 
-export function useRecordSelection<T extends SelectableRecord>(records: T[]) {
-  const [selectedRecordIds, setSelectedRecordIds] = useState<number[]>([])
+// Selection is a Map keyed by id rather than a filter over the page's
+// records — with server-side pagination, records selected on one page are
+// no longer present in the array once the user pages away, so selectedRecords
+// can't be re-derived by filtering `pageRecords` anymore.
+export function useRecordSelection<T extends SelectableRecord>(pageRecords: T[]) {
+  const [selectedMap, setSelectedMap] = useState<Map<number, T>>(new Map())
 
-  const selectedSet = useMemo(() => new Set(selectedRecordIds), [selectedRecordIds])
-  const selectedRecords = useMemo(
-    () => records.filter((record) => selectedSet.has(record.id)),
-    [records, selectedSet],
-  )
-  const selectedCount = selectedRecords.length
-  const areAllVisibleSelected = records.length > 0 && records.every((record) => selectedSet.has(record.id))
+  const selectedSet = useMemo(() => new Set(selectedMap.keys()), [selectedMap])
+  const selectedRecords = useMemo(() => Array.from(selectedMap.values()), [selectedMap])
+  const selectedCount = selectedMap.size
+  const areAllVisibleSelected = pageRecords.length > 0 && pageRecords.every((record) => selectedMap.has(record.id))
 
-  function toggleRecordSelection(recordId: number) {
-    setSelectedRecordIds((prev) => {
-      if (prev.includes(recordId)) {
-        return prev.filter((id) => id !== recordId)
-      }
-
-      return [...prev, recordId]
+  function toggleRecordSelection(record: T) {
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      if (next.has(record.id)) next.delete(record.id)
+      else next.set(record.id, record)
+      return next
     })
   }
 
   function selectAllVisible() {
-    setSelectedRecordIds((prev) => {
-      const next = new Set(prev)
-      records.forEach((record) => next.add(record.id))
-      return Array.from(next)
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      pageRecords.forEach((record) => next.set(record.id, record))
+      return next
     })
   }
 
   function deselectVisible() {
-    setSelectedRecordIds((prev) => prev.filter((id) => !records.some((record) => record.id === id)))
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      pageRecords.forEach((record) => next.delete(record.id))
+      return next
+    })
   }
 
   function clearSelection() {
-    setSelectedRecordIds([])
+    setSelectedMap(new Map())
   }
 
   return {
-    selectedRecordIds,
     selectedSet,
     selectedRecords,
     selectedCount,

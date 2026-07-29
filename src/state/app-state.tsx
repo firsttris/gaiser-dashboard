@@ -34,7 +34,6 @@ import {
   generateInvoiceNumber as apiGenerateInvoiceNumber,
 } from '../server/numbering'
 import {
-  recordsQueryOptions,
   createRecord as apiCreateRecord,
   createTruckRecord as apiCreateTruckRecord,
   updateRecordStatus as apiUpdateRecordStatus,
@@ -261,7 +260,6 @@ type AppState = {
   products: Product[]
   trucks: Truck[]
   constructionSites: ConstructionSite[]
-  records: RecordItem[]
   numberingSettings: NumberingSettings
   login: (companyId: string, pin: string) => Promise<LoginResult>
   isLoggingIn: boolean
@@ -342,21 +340,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const productsQuery = useQuery({ ...productsQueryOptions(), enabled: hasSession })
   const trucksQuery = useQuery({ ...trucksQueryOptions(), enabled: hasSession })
   const constructionSitesQuery = useQuery({ ...constructionSitesQueryOptions(), enabled: hasSession })
-  const recordsQuery = useQuery({ ...recordsQueryOptions(), enabled: hasSession })
   const numberingSettingsQuery = useQuery({ ...numberingSettingsQueryOptions(), enabled: isAdminLoggedIn })
 
   const products = productsQuery.data ?? []
   const trucks = trucksQuery.data ?? []
   const constructionSites = constructionSitesQuery.data ?? []
-  const records = recordsQuery.data ?? []
   const numberingSettings = numberingSettingsQuery.data ?? DEFAULT_NUMBERING_SETTINGS
 
   const hydrated =
     adminSessionQuery.isFetched &&
     customerSessionQuery.isFetched &&
     companiesQuery.isFetched &&
-    (!hasSession ||
-      (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched && recordsQuery.isFetched))
+    (!hasSession || (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched))
 
   const invalidate = (queryKey: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey })
 
@@ -542,7 +537,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       products,
       trucks,
       constructionSites,
-      records,
       numberingSettings,
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
       isLoggingIn: customerSignInMutation.isPending,
@@ -623,7 +617,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       products,
       trucks,
       constructionSites,
-      records,
       numberingSettings,
       customerSignInMutation,
       customerSignOutMutation,
