@@ -34,42 +34,60 @@ function RegistrierenPage() {
   async function submitMasterPin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = await verifyMasterPin({ masterPin })
-    if (!result.ok) {
-      setMasterPinError(result.message)
+    if (masterPin.length !== 4) {
+      setMasterPinError('Bitte eine 4-stellige PIN eingeben.')
       return
     }
 
-    setMasterPinError('')
-    setStep('konto')
+    try {
+      const result = await verifyMasterPin({ masterPin })
+      if (!result.ok) {
+        setMasterPinError(result.message)
+        return
+      }
+
+      setMasterPinError('')
+      setStep('konto')
+    } catch {
+      setMasterPinError('Master-PIN ist ungültig.')
+    }
   }
 
   async function submitSignUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (pin.length !== 4) {
+      setError('Bitte eine 4-stellige PIN eingeben.')
+      return
+    }
 
     if (pin !== pinConfirmation) {
       setError('Die PINs stimmen nicht überein.')
       return
     }
 
-    const result = await signUp({
-      masterPin,
-      name,
-      priceCategory,
-      pin,
-      pinConfirmation,
-      street,
-      postalCode,
-      city,
-    })
+    try {
+      const result = await signUp({
+        masterPin,
+        name,
+        priceCategory,
+        pin,
+        pinConfirmation,
+        street,
+        postalCode,
+        city,
+      })
 
-    if (!result.ok) {
-      setError(result.message)
-      return
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+
+      setError('')
+      void navigate({ to: '/kunde/neuer-vorgang' })
+    } catch {
+      setError('Registrierung fehlgeschlagen. Bitte Eingaben prüfen.')
     }
-
-    setError('')
-    void navigate({ to: '/kunde/neuer-vorgang' })
   }
 
   if (isLoggedIn) {

@@ -34,14 +34,28 @@ function App() {
   async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = await login(selectedCompanyId ?? '', pin)
-    if (!result.ok) {
-      setError(result.message)
+    if (!selectedCompanyId) {
+      setError('Bitte eine Firma auswählen.')
       return
     }
 
-    setError('')
-    void navigate({ to: '/kunde/neuer-vorgang' })
+    if (pin.length !== 4) {
+      setError('Bitte eine 4-stellige PIN eingeben.')
+      return
+    }
+
+    try {
+      const result = await login(selectedCompanyId, pin)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+
+      setError('')
+      void navigate({ to: '/kunde/neuer-vorgang' })
+    } catch {
+      setError('Firma oder PIN ist ungültig.')
+    }
   }
 
   if (isLoggedIn) {
