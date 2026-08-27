@@ -1,0 +1,46 @@
+name: Supabase Keepalive
+
+# Free-tier Supabase projects pause after 7 days without database activity.
+# This pings the public `companies_public` view via PostgREST on a schedule
+# so the project always sees recent activity and never pauses.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_URL            same value as VITE_SUPABASE_URL
+#   SUPABASE_PUBLISHABLE_KEY same value as VITE_SUPABASE_PUBLISHABLE_KEY
+# Both are already public/browser-exposed values, so this workflow needs no
+# service-role/secret key.
+
+on:
+  schedule:
+    # Every 3 days at 04:00 UTC – comfortably inside the 7-day pause window.
+    - cron: '0 4 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (companies_public)
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY secret." >&2
+            exit 1
+          fi
+
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/companies_public?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+          echo "HTTP status: $status"
+          cat /tmp/response.json
+
+          if [ "$status" -ge 400 ]; then
+            echo "Supabase ping failed with status $status" >&2
+            exit 1
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
